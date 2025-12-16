@@ -1,0 +1,53 @@
+{
+  "name": "@claude/context-monitor",
+  "version": "1.0.0",
+  "description": "Semi-automated context usage monitoring system for Claude Code",
+  "main": "scripts/init.js",
+  "bin": {
+    "claude-context-init": "scripts/init.js"
+  },
+  "scripts": {
+    "postinstall": "echo '\n✅ @claude/context-monitor installed!\n\nRun: npm run init\nOr:  npx claude-context-init\n'",
+    "init": "node scripts/init.js",
+    "test": "bash test-context-monitor.sh",
+    "uninstall": "node scripts/uninstall.js"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "context-monitoring",
+    "mcp-server",
+    "hooks",
+    "ai",
+    "anthropic",
+    "automation"
+  ],
+  "author": "Your Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/context-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/context-monitor/issues"
+  },
+  "homepage": "https://github.com/your-username/context-monitor#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "hooks/",
+    "mcp-servers/",
+    "scripts/",
+    "templates/",
+    "workflows/",
+    "README.md",
+    "INSTALL.md",
+    "CONTEXT_MONITORING.md",
+    "STATELESS_WORKFLOW_GUIDE.md",
+    "QUICK_START.md",
+    "MIGRATION_GUIDE.md",
+    "test-context-monitor.sh",
+    "LICENSE"
+  ]
+}

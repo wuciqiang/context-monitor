@@ -1,0 +1,396 @@
+# Stateless Development Workflow
+# 无状态开发工作流 - 原子任务 + 状态文件 + 独立会话
+# Version: 2.0.0
+
+name: "Stateless Development Workflow"
+description: "Context-efficient workflow using isolated sessions and file-based state"
+version: "2.0.0"
+
+# ============================================
+# 核心原则
+# ============================================
+# 1. 每个原子任务使用独立会话
+# 2. 通过文件传递状态，不依赖对话历史
+# 3. 每个任务完成后使用 /clear 清除上下文
+# 4. 单个任务上下文使用率不超过 80%
+
+# ============================================
+# 配置
+# ============================================
+config:
+  # 会话模式
+  session_mode: "isolated"          # 每个任务独立会话
+
+  # 上下文限制
+  context:
+    max_per_task: 80                # 单任务最大 80% 上下文
+    warning_threshold: 60           # 60% 时警告
+
+  # 状态管理
+  state:
+    enabled: true
+    directory: ".claude/state"
+    current_file: "current-session.md"
+    backup_enabled: true
+    backup_frequency: "per_task"
+
+  # 任务原子化
+  atomic_task:
+    max_duration_minutes: 30
+    max_files: 3
+    single_responsibility: true
+
+# ============================================
+# 工作流步骤
+# ============================================
+steps:
+  # ============================================
+  # Step 0: 初始化会话状态
+  # ============================================
+  - id: "init-session"
+    name: "初始化会话状态"
+    description: "创建或加载会话状态文件"
+
+    actions:
+      - type: "check_state_file"
+        file: ".claude/state/current-session.md"
+
+      - type: "create_if_not_exists"
+        file: ".claude/state/current-session.md"
+        template: ".claude/templates/session-state.md"
+
+      - type: "load_state"
+        from: ".claude/state/current-session.md"
+
+      - type: "notify"
+        message: |
+          ✅ 会话状态已加载
+
+          当前进度: {completed_tasks}/{total_tasks} 任务
+          下一任务: {next_task.id} - {next_task.name}
+
+  # ============================================
+  # Step 1-3: 需求澄清、技术分析、计划生成
+  # （与之前的 dev.yml 相同，这里省略）
+  # ============================================
+
+  # ============================================
+  # Step 4: 任务执行循环（无状态模式）
+  # ============================================
+  - id: "execute-tasks-stateless"
+    name: "任务执行（无状态模式）"
+    description: "每个任务使用独立会话，通过文件传递状态"
+
+    mode: "stateless"
+    loop: true
+    for_each: "task in atomic_tasks"
+
+    # ----------------------------------------
+    # 任务前置操作
+    # ----------------------------------------
+    before_task:
+      # 1. 检查上下文使用率
+      - action: "check_context"
+        threshold: 80
+        on_exceed:
+          action: "abort"
+          message: "⚠️ 上下文已超过 80%，请先完成当前任务"
+
+      # 2. 加载状态文件
+      - action: "load_state"
+        files:
+          - ".claude/state/current-session.md"
+          - "./CLAUDE.md"
+          - ".claude/specs/atomic-tasks.md"
+
+        prompt: |
+          请阅读以下文件了解当前项目状态：
+
+          1. **会话状态**: `.claude/state/current-session.md`
+             - 当前进度
+             - 已完成任务的输出
+             - 任务间依赖数据
+
+          2. **项目上下文**: `./CLAUDE.md`
+             - 项目信息
+             - 技术栈
+             - 开发规范
+
+          3. **任务列表**: `.claude/specs/atomic-tasks.md`
+             - 所有任务规范
+             - 依赖关系
+
+      # 3. 加载当前任务规范
+      - action: "load_task_spec"
+        file: ".claude/specs/task-{task.id}.md"
+
+        prompt: |
+          现在开始执行：
+
+          **任务 ID**: {task.id}
+          **任务名称**: {task.name}
+          **任务规范**: 见 `.claude/specs/task-{task.id}.md`
+
+          请按照任务规范执行。
+
+    # ----------------------------------------
+    # 任务执行
+    # ----------------------------------------
+    execute:
+      # 上下文监控
+      context_monitoring:
+        enabled: true
+        check_interval: "per_action"
+
+        on_warning:  # 60%
+          action: "notify"
+          message: "⚠️ 上下文使用率 {usage}%，请尽快完成任务"
+
+        on_critical:  # 80%
+          action: "abort"
+          message: |
+            🚨 上下文使用率已达 {usage}%
+
+            请立即：
+            1. 保存当前进度到状态文件
+            2. 完成当前任务的最后步骤
+            3. 不要开始新的子任务
+
+      # 任务执行步骤（与之前相同）
+      steps:
+        - id: "get-prototype"
+          # ... (与之前相同)
+
+        - id: "implement"
+          # ... (与之前相同)
+
+        - id: "code-review"
+          # ... (与之前相同)
+
+        - id: "fix-issues"
+          # ... (与之前相同)
+
+    # ----------------------------------------
+    # 任务后置操作（关键！）
+    # ----------------------------------------
+    after_task:
+      # 1. 保存任务输出到状态文件
+      - action: "save_task_output"
+        file: ".claude/state/current-session.md"
+
+        update_sections:
+          # 更新任务状态表
+          - section: "任务执行状态"
+            update: |
+              | {task.id} | {task.name} | ✅ 完成 | {timestamp} |
+
+          # 更新任务输出
+          - section: "任务输出"
+            append: |
+              ### Task {task.id}: {task.name}
+
+              **完成时间**: {timestamp}
+
+              **输出文件**:
+              {task.output_files}
+
+              **关键决策**:
+              {task.key_decisions}
+
+              **传递给下一任务的数据**:
+              ```
+              {task.transfer_data}
+              ```
+
+      # 2. 更新进度文件
+      - action: "update_progress"
+        file: ".claude/progress/progress.md"
+
+        update:
+          completed_count: "{completed_count + 1}"
+          current_task: "{next_task.id}"
+
+      # 3. 更新 CLAUDE.md
+      - action: "update_memory"
+        file: "./CLAUDE.md"
+
+        update_section: "## 当前进度 (自动更新)"
+        content: |
+          **最后更新**: {timestamp}
+          **当前任务**: {next_task.id}
+          **完成进度**: {completed_count}/{total_count}
+
+          **最近完成**: Task {task.id} - {task.name}
+          **下一任务**: Task {next_task.id} - {next_task.name}
+
+      # 4. 备份状态文件
+      - action: "backup_state"
+        from: ".claude/state/current-session.md"
+        to: ".claude/state/backups/session-{timestamp}.md"
+
+      # 5. 提示用户清除上下文
+      - action: "notify"
+        message: |
+          ✅ Task {task.id} 已完成
+
+          **任务状态已保存到**:
+          - `.claude/state/current-session.md`
+          - `./CLAUDE.md`
+
+          **下一步操作**:
+          1. 请执行 `/clear` 清除当前上下文
+          2. 然后继续执行下一任务
+
+          **下一任务**: Task {next_task.id} - {next_task.name}
+
+          **提示词**:
+          ```
+          请阅读 .claude/state/current-session.md 和 ./CLAUDE.md 了解当前进度，
+          然后执行 Task {next_task.id}: {next_task.name}
+          ```
+
+      # 6. 等待用户清除上下文
+      - action: "pause"
+        wait_for: "user_clear_context"
+
+        instructions: |
+          请执行以下操作继续：
+
+          1. 输入 `/clear` 清除上下文
+          2. 复制上面的提示词
+          3. 开始新的对话
+
+    # ----------------------------------------
+    # 错误处理
+    # ----------------------------------------
+    on_error:
+      - action: "save_error_state"
+        file: ".claude/state/error-{timestamp}.md"
+        content: |
+          # 错误状态
+
+          **任务**: {task.id} - {task.name}
+          **错误时间**: {timestamp}
+          **错误信息**: {error.message}
+
+          **当前状态**:
+          {current_state}
+
+          **恢复步骤**:
+          1. 检查错误信息
+          2. 修复问题
+          3. 从 `.claude/state/current-session.md` 恢复状态
+          4. 重新执行任务 {task.id}
+
+      - action: "notify"
+        message: |
+          ❌ Task {task.id} 执行失败
+
+          错误状态已保存到: `.claude/state/error-{timestamp}.md`
+
+          请检查错误信息并修复后重试。
+
+  # ============================================
+  # Step 5: 完成工作流
+  # ============================================
+  - id: "complete-workflow"
+    name: "完成工作流"
+    description: "所有任务完成后的清理工作"
+    condition: "all_tasks_complete"
+
+    actions:
+      - action: "archive_state"
+        from: ".claude/state/current-session.md"
+        to: ".claude/state/completed/session-{project_name}-{timestamp}.md"
+
+      - action: "generate_report"
+        file: ".claude/reports/completion-report.md"
+        template: ".claude/templates/completion-report.md"
+
+      - action: "notify"
+        message: |
+          🎉 所有任务已完成！
+
+          **完成报告**: `.claude/reports/completion-report.md`
+          **状态归档**: `.claude/state/completed/`
+
+          请进行最终验收测试。
+
+# ============================================
+# 状态文件结构定义
+# ============================================
+state_schema:
+  current_session:
+    file: ".claude/state/current-session.md"
+    sections:
+      - name: "会话元数据"
+        required: true
+        fields:
+          - session_id
+          - start_time
+          - last_update
+          - current_task_id
+
+      - name: "全局上下文"
+        required: true
+        fields:
+          - project_name
+          - project_type
+          - tech_stack
+          - key_decisions
+
+      - name: "任务执行状态"
+        required: true
+        format: "table"
+        columns:
+          - task_id
+          - task_name
+          - status
+          - completion_time
+
+      - name: "任务输出"
+        required: true
+        format: "markdown"
+        content: "每个任务的输出和关键信息"
+
+      - name: "任务间依赖数据"
+        required: true
+        format: "code_blocks"
+        content: "需要传递给下一任务的数据"
+
+      - name: "下一任务预览"
+        required: true
+        fields:
+          - next_task_id
+          - next_task_name
+          - dependencies
+
+# ============================================
+# 使用说明
+# ============================================
+usage:
+  initialization: |
+    # 初始化工作流
+    1. 确保 .claude/ 目录存在
+    2. 运行工作流: /workflow run stateless-dev
+    3. 按照提示完成需求澄清和任务规划
+
+  task_execution: |
+    # 执行任务
+    1. 工作流会提示你执行任务
+    2. 任务完成后，执行 /clear
+    3. 复制提示词，开始新对话
+    4. 重复直到所有任务完成
+
+  state_recovery: |
+    # 恢复状态
+    如果会话中断：
+    1. 读取 .claude/state/current-session.md
+    2. 找到当前任务 ID
+    3. 继续执行该任务
+
+  troubleshooting: |
+    # 故障排除
+    - 状态文件损坏: 从 .claude/state/backups/ 恢复
+    - 任务失败: 查看 .claude/state/error-*.md
+    - 上下文溢出: 检查任务是否过大，考虑拆分

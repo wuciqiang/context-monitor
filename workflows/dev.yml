@@ -1,0 +1,426 @@
+# Universal Development Workflow
+# 通用开发工作流 - 适用于任何项目
+# Version: 1.0.0
+
+name: "Development Workflow"
+description: "Complete development workflow from requirements to deployment"
+version: "1.0.0"
+
+# 工作流配置
+config:
+  # 上下文管理
+  context:
+    max_tokens_per_step: 30000      # 每步最大 token 数
+    use_scout_for_large_files: true # 大文件使用 scout 压缩
+    parallel_agents: true            # 启用并行代理
+
+  # 多模型协作
+  collaboration:
+    primary: "claude"                # 主架构师
+    backend_expert: "codex"          # 后端/逻辑专家
+    frontend_expert: "gemini"        # 前端/UI 专家
+    reviewer: "codex"                # 代码审查者
+
+  # 任务原子化标准
+  atomic_task:
+    max_duration_minutes: 30         # 最大时长 30 分钟
+    max_files: 3                     # 最多涉及 3 个文件
+    single_responsibility: true      # 单一职责
+    testable: true                   # 可独立测试
+
+# 工作流步骤
+steps:
+  # ============================================
+  # Step 1: 需求澄清 (Requirement Clarification)
+  # ============================================
+  - id: "clarify-requirements"
+    name: "需求澄清"
+    description: "通过结构化问题明确用户需求"
+    agent: "claude"
+
+    actions:
+      - type: "ask_questions"
+        prompt_template: ".claude/prompts/requirement-clarification.md"
+        questions:
+          - category: "技术栈"
+            items:
+              - "前端框架选择？（例如：Next.js, React, Vue）"
+              - "后端技术栈？（例如：Node.js, Python, Go）"
+              - "数据库选择？（例如：PostgreSQL, MongoDB, MySQL）"
+
+          - category: "核心功能"
+            items:
+              - "必须实现的核心功能有哪些？"
+              - "用户角色和权限设计？"
+              - "数据流和业务逻辑？"
+
+          - category: "非功能需求"
+            items:
+              - "性能要求？（例如：响应时间、并发量）"
+              - "安全要求？（例如：认证方式、数据加密）"
+              - "可扩展性要求？"
+
+          - category: "约束条件"
+            items:
+              - "预算限制？"
+              - "时间限制？"
+              - "技术债务或遗留系统？"
+
+      - type: "validate"
+        description: "确认需求理解正确"
+        output: ".claude/specs/requirements.md"
+
+    outputs:
+      - "requirements.md"
+      - "constraints.json"
+
+  # ============================================
+  # Step 2: 深度技术分析 (Technical Analysis)
+  # ============================================
+  - id: "technical-analysis"
+    name: "深度技术分析"
+    description: "多模型协作进行技术方案分析"
+    parallel: true
+
+    agents:
+      # Codex: 后端/架构分析
+      - agent: "codex"
+        role: "backend_architect"
+        sandbox: "read-only"
+        prompt: |
+          分析以下需求的后端技术方案：
+          {requirements}
+
+          请提供：
+          1. 数据模型设计
+          2. API 架构设计
+          3. 安全方案
+          4. 性能优化策略
+          5. 潜在技术风险
+        output: "analysis-backend.md"
+
+      # Gemini: 前端/UI 分析
+      - agent: "gemini"
+        role: "frontend_architect"
+        prompt: |
+          分析以下需求的前端技术方案：
+          {requirements}
+
+          请提供：
+          1. 组件架构设计
+          2. 状态管理方案
+          3. UI/UX 设计建议
+          4. 性能优化策略
+          5. 可访问性考虑
+        output: "analysis-frontend.md"
+
+      # Claude: 整体架构分析
+      - agent: "claude"
+        role: "system_architect"
+        prompt: |
+          基于需求进行整体系统架构分析：
+          {requirements}
+
+          请提供：
+          1. 系统架构图
+          2. 技术栈选型理由
+          3. 模块划分
+          4. 集成方案
+          5. 部署策略
+        output: "analysis-system.md"
+
+    # 汇总分析结果
+    aggregation:
+      agent: "claude"
+      inputs: ["analysis-backend.md", "analysis-frontend.md", "analysis-system.md"]
+      output: ".claude/specs/technical-analysis.md"
+
+  # ============================================
+  # Step 3: 生成开发计划 (Development Plan)
+  # ============================================
+  - id: "generate-dev-plan"
+    name: "生成开发计划"
+    description: "使用 dev-plan-generator 生成结构化开发计划"
+
+    skill: "dev-plan-generator"
+    inputs:
+      - "requirements.md"
+      - "technical-analysis.md"
+
+    config:
+      plan_format: "hierarchical"    # 层级结构
+      include_dependencies: true     # 包含依赖关系
+      include_testing: true          # 包含测试策略
+      include_milestones: true       # 包含里程碑
+
+    output: ".claude/specs/dev-plan.md"
+
+    # 用户确认
+    user_approval:
+      required: true
+      prompt: "请审查开发计划，是否需要调整？"
+      options:
+        - "按计划执行"
+        - "需要调整（请说明）"
+        - "任务原子化（拆分为最小单元）"
+
+  # ============================================
+  # Step 4: 任务原子化 (Task Atomization)
+  # ============================================
+  - id: "atomize-tasks"
+    name: "任务原子化"
+    description: "将开发计划拆分为原子级任务"
+    condition: "user_choice == '任务原子化'"
+
+    skill: "task-atomizer"
+    inputs:
+      - "dev-plan.md"
+
+    config:
+      # 原子任务标准
+      max_duration: 30               # 最大 30 分钟
+      max_files: 3                   # 最多 3 个文件
+      single_responsibility: true    # 单一职责
+
+      # 输出格式
+      format:
+        numbering: "hierarchical"    # 1.1, 1.2, 2.1, 2.2
+        include_dependencies: true   # 标注依赖
+        include_files: true          # 列出涉及文件
+        include_acceptance: true     # 验收标准
+
+      # 并行化分析
+      parallelization:
+        analyze: true                # 分析并行机会
+        layers: true                 # 生成并行层
+
+    output: ".claude/specs/atomic-tasks.md"
+
+  # ============================================
+  # Step 5: 任务执行循环 (Task Execution Loop)
+  # ============================================
+  - id: "execute-tasks"
+    name: "任务执行"
+    description: "按原子任务逐个执行"
+    loop: true
+
+    for_each: "task in atomic_tasks"
+
+    steps:
+      # 5.1: 获取代码原型
+      - id: "get-prototype"
+        name: "获取代码原型"
+        condition: "task.requires_prototype"
+
+        agent: "{{ task.backend ? 'codex' : 'gemini' }}"
+        sandbox: "read-only"
+        prompt: |
+          为以下任务提供代码原型（unified diff patch）：
+
+          任务: {task.description}
+          文件: {task.files}
+          需求: {task.requirements}
+
+          请提供：
+          1. 代码实现思路
+          2. Unified diff patch（严禁实际修改文件）
+          3. 关键技术点说明
+
+        output: "prototypes/task-{task.id}.patch"
+
+      # 5.2: 实施开发
+      - id: "implement"
+        name: "实施开发"
+        agent: "claude"
+
+        inputs:
+          - "task-{task.id}.patch"
+          - "task-{task.id}.spec"
+
+        actions:
+          - type: "review_prototype"
+            description: "审查原型代码"
+
+          - type: "implement"
+            description: "基于原型重写为生产级代码"
+            quality_standards:
+              - "企业级代码质量"
+              - "完整的错误处理"
+              - "清晰的注释"
+              - "遵循项目规范"
+
+          - type: "self_test"
+            description: "自我测试"
+            checks:
+              - "语法正确"
+              - "逻辑完整"
+              - "边界情况处理"
+              - "性能考虑"
+
+        output: "implementations/task-{task.id}.diff"
+
+      # 5.3: 代码审查
+      - id: "code-review"
+        name: "代码审查"
+        agent: "codex"
+        required: true
+
+        inputs:
+          - "task-{task.id}.diff"
+          - "task-{task.id}.spec"
+
+        review_focus:
+          - "逻辑正确性"
+          - "边界情况"
+          - "性能问题"
+          - "安全漏洞"
+          - "代码风格"
+
+        output: "reviews/task-{task.id}-review.md"
+
+      # 5.4: 修复问题
+      - id: "fix-issues"
+        name: "修复问题"
+        condition: "review.has_issues"
+        agent: "claude"
+
+        inputs:
+          - "task-{task.id}-review.md"
+
+        actions:
+          - type: "fix"
+            description: "根据审查意见修复问题"
+
+          - type: "re-review"
+            agent: "codex"
+            description: "重新审查"
+
+        max_iterations: 3
+
+      # 5.5: 提交任务
+      - id: "commit-task"
+        name: "提交任务"
+        condition: "review.approved"
+
+        actions:
+          - type: "git_commit"
+            message: "feat: {task.description} (Task {task.id})"
+
+          - type: "update_progress"
+            file: ".claude/progress.md"
+
+          - type: "mark_complete"
+            task_id: "{task.id}"
+
+  # ============================================
+  # Step 6: 集成测试 (Integration Testing)
+  # ============================================
+  - id: "integration-test"
+    name: "集成测试"
+    description: "完成所有任务后进行集成测试"
+    condition: "all_tasks_complete"
+
+    actions:
+      - type: "run_tests"
+        test_types:
+          - "unit"
+          - "integration"
+          - "e2e"
+
+      - type: "performance_test"
+        metrics:
+          - "response_time"
+          - "throughput"
+          - "resource_usage"
+
+      - type: "security_scan"
+        tools:
+          - "dependency_check"
+          - "code_scan"
+          - "penetration_test"
+
+    output: ".claude/reports/integration-test.md"
+
+  # ============================================
+  # Step 7: 用户验收 (User Acceptance)
+  # ============================================
+  - id: "user-acceptance"
+    name: "用户验收"
+    description: "提供测试清单供用户验收"
+
+    deliverables:
+      - type: "test_checklist"
+        file: ".claude/deliverables/test-checklist.md"
+        content:
+          - "功能测试清单"
+          - "性能测试结果"
+          - "安全测试报告"
+          - "已知问题列表"
+
+      - type: "documentation"
+        files:
+          - "README.md"
+          - "DEPLOYMENT.md"
+          - "API_DOCS.md"
+
+      - type: "demo"
+        description: "演示关键功能"
+
+    user_approval:
+      required: true
+      options:
+        - "验收通过"
+        - "需要修改（请说明）"
+
+# 工作流钩子 (Hooks)
+hooks:
+  # 任务开始前
+  before_task:
+    - type: "context_check"
+      max_tokens: 30000
+      action_if_exceeded: "use_scout"
+
+    - type: "dependency_check"
+      ensure_dependencies_complete: true
+
+  # 任务完成后
+  after_task:
+    - type: "update_progress"
+      file: ".claude/progress.md"
+
+    - type: "notify"
+      message: "Task {task.id} completed"
+
+  # 错误处理
+  on_error:
+    - type: "log"
+      file: ".claude/logs/errors.log"
+
+    - type: "rollback"
+      if: "critical_error"
+
+    - type: "notify_user"
+      message: "Error in task {task.id}: {error.message}"
+
+# 质量标准
+quality_standards:
+  code:
+    - "遵循项目代码规范"
+    - "完整的错误处理"
+    - "清晰的注释（仅在必要时）"
+    - "单元测试覆盖率 > 80%"
+
+  documentation:
+    - "README 包含快速开始指南"
+    - "API 文档完整"
+    - "架构图清晰"
+
+  performance:
+    - "响应时间 < 200ms (P95)"
+    - "无内存泄漏"
+    - "资源使用合理"
+
+  security:
+    - "无已知安全漏洞"
+    - "敏感数据加密"
+    - "输入验证完整"
