@@ -22,16 +22,16 @@
     "anthropic",
     "automation"
   ],
-  "author": "Your Team",
+  "author": "wuciqiang",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/context-monitor.git"
+    "url": "https://github.com/wuciqiang/context-monitor.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/context-monitor/issues"
+    "url": "https://github.com/wuciqiang/context-monitor/issues"
   },
-  "homepage": "https://github.com/your-username/context-monitor#readme",
+  "homepage": "https://github.com/wuciqiang/context-monitor#readme",
   "engines": {
     "node": ">=18.0.0"
   },
