@@ -38,27 +38,34 @@
 
 ### 安装
 
-在你的项目根目录运行：
+**步骤 1: 全局安装（一次性）**
+
+参考 [全局安装指南.md](./全局安装指南.md) 安装 CLAUDE.md 和 Code Index MCP。
+
+**步骤 2: 项目级安装（每个项目）**
 
 ```bash
-# 方式 1: 使用 npm（推荐）
-cd /path/to/your-project
-npm init -y  # 如果项目还没有 package.json
-npm install --save-dev @claude/context-monitor
-npm run init
+# Windows (PowerShell)
+cd F:\LayaAir-GitHub\context-monitor
+.\install-to-project.ps1
 
-# 方式 2: 手动复制
-cp -r /path/to/claude-context-monitor/.claude /path/to/your-project/
-cd /path/to/your-project
-node .claude/scripts/init.js
+# macOS / Linux / Git Bash
+cd /path/to/context-monitor
+./install-to-project.sh
 ```
+
+详细说明请参考 [项目级安装指南.md](./项目级安装指南.md)
 
 ### 测试
 
 ```bash
-npm run test
-# 或
-bash .claude/test-context-monitor.sh
+cd /path/to/your-project
+claude
+```
+
+在对话中输入：
+```
+请检查当前上下文使用率
 ```
 
 ### 使用
@@ -96,36 +103,32 @@ bash .claude/test-context-monitor.sh
 
 ## 📁 文件结构
 
-安装后会创建以下文件：
+安装后会创建以下文件（所有文件都在 `.claude` 目录下，保持项目根目录整洁）：
 
 ```
 your-project/
-├── .claude/
-│   ├── hooks/
-│   │   └── capture-session-info.sh       # SessionStart hook
-│   ├── mcp-servers/
-│   │   └── context-monitor/
-│   │       └── server.py                  # MCP server
-│   ├── state/                             # 会话状态目录
-│   ├── settings.local.json                # Hook 和 MCP 配置
-│   ├── CONTEXT_MONITORING.md              # 详细文档
-│   └── test-context-monitor.sh            # 测试脚本
-└── CLAUDE.md                              # 包含上下文管理指令
+└── .claude/
+    ├── hooks/
+    │   └── capture-session-info.sh       # SessionStart hook
+    ├── mcp-servers/
+    │   └── context-monitor/
+    │       └── server.py                  # MCP server
+    ├── state/                             # 会话状态目录
+    └── settings.local.json                # Hook 和 MCP 配置
 ```
 
 ---
 
-## 🔧 可用命令
+## 🔧 安装脚本
 
 ```bash
-# 初始化系统
-npm run init
+# 项目级安装（交互式）
+./install-to-project.sh              # macOS/Linux/Git Bash
+.\install-to-project.ps1             # Windows PowerShell
 
-# 测试系统
-npm run test
-
-# 卸载系统
-npm run uninstall
+# 项目级安装（指定路径）
+./install-to-project.sh /path/to/project
+.\install-to-project.ps1 -TargetDir "D:\project"
 ```
 
 ---
@@ -235,7 +238,8 @@ python3 .claude/mcp-servers/context-monitor/server.py
 - **[整合工作流指南.md](./整合工作流指南.md)** - 整合工作流快速指南 ⭐
 
 ### 安装和使用
-- **[全局安装指南.md](./全局安装指南.md)** - 全局配置安装指南（推荐）
+- **[全局安装指南.md](./全局安装指南.md)** - 安装 CLAUDE.md 和 Code Index MCP 到全局
+- **[项目级安装指南.md](./项目级安装指南.md)** - 安装 Context Monitor 到项目（必需）
 
 ### 详细说明
 - [上下文监控详解.md](./上下文监控详解.md) - Context Monitor 详细说明

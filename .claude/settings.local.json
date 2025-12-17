@@ -3,7 +3,7 @@
     "SessionStart": [
       {
         "type": "command",
-        "command": "bash hooks/capture-session-info.sh",
+        "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/capture-session-info.sh\"",
         "timeout": 5
       }
     ]
@@ -11,7 +11,7 @@
   "mcpServers": {
     "context-monitor": {
       "command": "python3",
-      "args": ["mcp-servers/context-monitor/server.py"],
+      "args": [".claude/mcp-servers/context-monitor/server.py"],
       "env": {}
     },
     "code-index": {
