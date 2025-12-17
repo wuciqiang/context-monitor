@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/capture-session-info.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "context-monitor": {
+      "command": "python3",
+      "args": [".claude/mcp-servers/context-monitor/server.py"],
+      "env": {}
+    },
+    "code-index": {
+      "command": "uvx",
+      "args": ["code-index-mcp"]
+    }
+  }
+}

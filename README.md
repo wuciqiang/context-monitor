@@ -1,6 +1,6 @@
-# Claude Context Monitor
+# Claude Context Monitor + Integrated Workflow
 
-> 半自动化的 Claude Code 上下文使用率监控系统
+> 智能化的 Claude Code 开发系统：上下文监控 + 代码检索 + 多模型协作
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
@@ -8,13 +8,27 @@
 
 ---
 
-## 🎯 功能特性
+## 🎯 核心能力
 
+### Context Monitor（上下文监控）
 - ✅ **自动监控** - SessionStart hook 自动捕获会话信息
-- ✅ **智能提醒** - Claude 根据使用率主动采取行动
+- ✅ **智能提醒** - 根据使用率主动采取行动
 - ✅ **状态保存** - 自动保存会话状态以便恢复
-- ✅ **简单安装** - 一条命令完成安装
-- ✅ **跨项目** - 可安装到任何 Claude Code 项目
+
+### Code Index MCP（代码检索）
+- ✅ **语义搜索** - 自然语言查询代码库
+- ✅ **符号索引** - AST 解析，理解代码结构
+- ✅ **实时监控** - 自动检测文件变化
+
+### Multi-Model Collaboration（多模型协作）
+- ✅ **Codex 集成** - 后端逻辑和算法分析
+- ✅ **Gemini 集成** - 前端 UI 和样式设计
+- ✅ **交叉验证** - 双模型审计确保质量
+
+### Integrated Workflow（整合工作流）
+- ✅ **资源感知** - 上下文检查点贯穿全流程
+- ✅ **智能编排** - 自动协调多个工具和模型
+- ✅ **状态恢复** - 支持长时间任务的中断恢复
 
 ---
 
@@ -214,9 +228,19 @@ python3 .claude/mcp-servers/context-monitor/server.py
 
 ## 📚 文档
 
-- [完整文档](.claude/CONTEXT_MONITORING.md) - 详细使用说明
-- [工作流指南](./STATELESS_WORKFLOW_GUIDE.md) - 无状态工作流
-- [快速开始](./QUICK_START.md) - 5分钟上手
+### 核心文档
+- **[CLAUDE.md](./CLAUDE.md)** - 完整工作流定义和资源矩阵 ⭐
+- **[INTEGRATED_WORKFLOW_GUIDE.md](./INTEGRATED_WORKFLOW_GUIDE.md)** - 整合工作流快速指南 ⭐
+
+### 详细文档
+- [CONTEXT_MONITORING.md](./CONTEXT_MONITORING.md) - Context Monitor 详细说明
+- [STATELESS_WORKFLOW_GUIDE.md](./STATELESS_WORKFLOW_GUIDE.md) - 无状态工作流
+- [QUICK_START.md](./QUICK_START.md) - 5分钟上手
+
+### 参考文档
+- [INSTALL.md](./INSTALL.md) - 安装指南
+- [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - 迁移指南
+- [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) - 项目总结
 
 ---
 
