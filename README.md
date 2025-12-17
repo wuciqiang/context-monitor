@@ -6,6 +6,8 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://www.python.org/)
 
+📖 **[文档导航](./文档导航.md)** - 快速找到你需要的文档
+
 ---
 
 ## 🎯 核心能力
@@ -230,17 +232,16 @@ python3 .claude/mcp-servers/context-monitor/server.py
 
 ### 核心文档
 - **[CLAUDE.md](./CLAUDE.md)** - 完整工作流定义和资源矩阵 ⭐
-- **[INTEGRATED_WORKFLOW_GUIDE.md](./INTEGRATED_WORKFLOW_GUIDE.md)** - 整合工作流快速指南 ⭐
+- **[整合工作流指南.md](./整合工作流指南.md)** - 整合工作流快速指南 ⭐
 
-### 详细文档
-- [CONTEXT_MONITORING.md](./CONTEXT_MONITORING.md) - Context Monitor 详细说明
-- [STATELESS_WORKFLOW_GUIDE.md](./STATELESS_WORKFLOW_GUIDE.md) - 无状态工作流
-- [QUICK_START.md](./QUICK_START.md) - 5分钟上手
+### 安装和使用
+- **[快速开始.md](./快速开始.md)** - 5分钟上手
+- [安装指南.md](./安装指南.md) - 项目级安装详细步骤
+- [全局安装指南.md](./全局安装指南.md) - 全局配置安装指南
 
-### 参考文档
-- [INSTALL.md](./INSTALL.md) - 安装指南
-- [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - 迁移指南
-- [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) - 项目总结
+### 详细说明
+- [上下文监控详解.md](./上下文监控详解.md) - Context Monitor 详细说明
+- [CHANGELOG.md](./CHANGELOG.md) - 版本变更记录
 
 ---
 
