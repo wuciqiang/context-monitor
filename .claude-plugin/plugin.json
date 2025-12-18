@@ -1,0 +1,18 @@
+{
+  "name": "context-monitor",
+  "description": "智能化的 Claude Code 开发系统：上下文监控 + 代码检索 + 多模型协作",
+  "version": "1.0.0",
+  "author": {
+    "name": "Context Monitor Team"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wuciqiang/context-monitor"
+  },
+  "keywords": [
+    "context-monitoring",
+    "workflow",
+    "multi-model",
+    "code-search"
+  ]
+}
