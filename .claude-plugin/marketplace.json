@@ -1,0 +1,13 @@
+{
+  "name": "context-monitor-marketplace",
+  "owner": {
+    "name": "Context Monitor Team"
+  },
+  "plugins": [
+    {
+      "name": "context-monitor",
+      "source": "./",
+      "description": "智能化的 Claude Code 开发系统：上下文监控 + 代码检索 + 多模型协作"
+    }
+  ]
+}
