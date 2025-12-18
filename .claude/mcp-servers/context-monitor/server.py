@@ -12,7 +12,8 @@ from pathlib import Path
 
 def read_session_info():
     """读取 hook 捕获的会话信息"""
-    session_file = Path("/tmp/claude-session-info.json")
+    temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or '/tmp'
+    session_file = Path(temp_dir) / "claude-session-info.json"
     if not session_file.exists():
         return None
 
@@ -121,7 +122,19 @@ def handle_request(request):
     """处理 MCP 请求"""
     method = request.get("method")
 
-    if method == "tools/list":
+    if method == "initialize":
+        return {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {
+                "tools": {}
+            },
+            "serverInfo": {
+                "name": "context-monitor",
+                "version": "1.0.0"
+            }
+        }
+
+    elif method == "tools/list":
         return {
             "tools": [
                 {
@@ -187,10 +200,30 @@ if __name__ == "__main__":
     for line in sys.stdin:
         try:
             request = json.loads(line)
-            response = handle_request(request)
+            request_id = request.get("id")
+            result = handle_request(request)
+
+            response = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result
+            }
             print(json.dumps(response))
             sys.stdout.flush()
         except Exception as e:
-            error_response = {"error": str(e)}
+            request_id = None
+            try:
+                request_id = json.loads(line).get("id")
+            except:
+                pass
+
+            error_response = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": -32603,
+                    "message": str(e)
+                }
+            }
             print(json.dumps(error_response))
             sys.stdout.flush()

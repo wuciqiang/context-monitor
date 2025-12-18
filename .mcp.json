@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "context-monitor": {
+      "type": "stdio",
+      "command": "python",
+      "args": [".claude/mcp-servers/context-monitor/server.py"],
+      "env": {}
+    }
+  }
+}

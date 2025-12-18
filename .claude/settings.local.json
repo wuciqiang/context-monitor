@@ -2,21 +2,23 @@
   "hooks": {
     "SessionStart": [
       {
-        "type": "command",
-        "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/capture-session-info.sh\"",
-        "timeout": 5
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/capture-session-info.py\"",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },
   "mcpServers": {
     "context-monitor": {
-      "command": "python3",
+      "type": "stdio",
+      "command": "python",
       "args": [".claude/mcp-servers/context-monitor/server.py"],
       "env": {}
-    },
-    "code-index": {
-      "command": "uvx",
-      "args": ["code-index-mcp"]
     }
   }
 }

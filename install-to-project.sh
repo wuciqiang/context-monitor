@@ -22,18 +22,39 @@ TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
 echo "目标项目: $TARGET_DIR"
 echo ""
 
-echo "[1/4] 创建目录结构..."
+echo "[1/5] 创建目录结构..."
 mkdir -p "$TARGET_DIR/.claude/hooks"
 mkdir -p "$TARGET_DIR/.claude/mcp-servers/context-monitor"
 mkdir -p "$TARGET_DIR/.claude/state"
 
-echo "[2/4] 复制文件..."
-cp "$SCRIPT_DIR/.claude/hooks/capture-session-info.sh" "$TARGET_DIR/.claude/hooks/"
+echo "[2/5] 复制文件..."
+cp "$SCRIPT_DIR/.claude/hooks/capture-session-info.py" "$TARGET_DIR/.claude/hooks/"
 cp "$SCRIPT_DIR/.claude/mcp-servers/context-monitor/server.py" "$TARGET_DIR/.claude/mcp-servers/context-monitor/"
-chmod +x "$TARGET_DIR/.claude/hooks/capture-session-info.sh"
+chmod +x "$TARGET_DIR/.claude/hooks/capture-session-info.py"
 chmod +x "$TARGET_DIR/.claude/mcp-servers/context-monitor/server.py"
 
-echo "[3/4] 配置 .claude/settings.local.json..."
+echo "[3/5] 配置 .mcp.json..."
+MCP_FILE="$TARGET_DIR/.mcp.json"
+
+if [ -f "$MCP_FILE" ]; then
+    echo "检测到现有 .mcp.json，备份为 .mcp.json.backup"
+    cp "$MCP_FILE" "$MCP_FILE.backup"
+fi
+
+cat > "$MCP_FILE" << 'EOF'
+{
+  "mcpServers": {
+    "context-monitor": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [".claude/mcp-servers/context-monitor/server.py"],
+      "env": {}
+    }
+  }
+}
+EOF
+
+echo "[4/5] 配置 .claude/settings.local.json..."
 SETTINGS_FILE="$TARGET_DIR/.claude/settings.local.json"
 
 if [ -f "$SETTINGS_FILE" ]; then
@@ -46,35 +67,41 @@ cat > "$SETTINGS_FILE" << 'EOF'
   "hooks": {
     "SessionStart": [
       {
-        "type": "command",
-        "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/capture-session-info.sh\"",
-        "timeout": 5
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/capture-session-info.py\"",
+            "timeout": 5
+          }
+        ]
       }
     ]
-  },
-  "mcpServers": {
-    "context-monitor": {
-      "command": "python3",
-      "args": [".claude/mcp-servers/context-monitor/server.py"],
-      "env": {}
-    }
   }
 }
 EOF
 
-echo "[4/4] 验证安装..."
-if [ -f "$TARGET_DIR/.claude/hooks/capture-session-info.sh" ] && \
+echo "[5/5] 验证安装..."
+if [ -f "$TARGET_DIR/.claude/hooks/capture-session-info.py" ] && \
    [ -f "$TARGET_DIR/.claude/mcp-servers/context-monitor/server.py" ] && \
-   [ -f "$TARGET_DIR/.claude/settings.local.json" ]; then
+   [ -f "$TARGET_DIR/.claude/settings.local.json" ] && \
+   [ -f "$TARGET_DIR/.mcp.json" ]; then
     echo ""
     echo "✅ Context Monitor 安装成功！"
     echo ""
     echo "安装位置: $TARGET_DIR"
     echo ""
+    echo "已创建文件:"
+    echo "  - .mcp.json (MCP server 配置)"
+    echo "  - .claude/settings.local.json (Hook 配置)"
+    echo "  - .claude/hooks/capture-session-info.py"
+    echo "  - .claude/mcp-servers/context-monitor/server.py"
+    echo ""
     echo "下一步:"
     echo "1. cd $TARGET_DIR"
     echo "2. claude"
-    echo "3. 在对话中输入: 请检查当前上下文使用率"
+    echo "3. 批准 context-monitor MCP server"
+    echo "4. 在对话中输入: 请检查当前上下文使用率"
 else
     echo "❌ 安装验证失败"
     exit 1

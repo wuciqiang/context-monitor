@@ -13,9 +13,10 @@
 ## 🎯 核心能力
 
 ### Context Monitor（上下文监控）
-- ✅ **自动监控** - SessionStart hook 自动捕获会话信息
+- ✅ **实时监控** - MCP server 提供 `check_context_usage` 工具
 - ✅ **智能提醒** - 根据使用率主动采取行动
 - ✅ **状态保存** - 自动保存会话状态以便恢复
+- ⚠️ **SessionStart Hook** - 在 macOS/Linux 上自动触发，Windows 上需手动调用
 
 ### Code Index MCP（代码检索）
 - ✅ **语义搜索** - 自然语言查询代码库
@@ -23,6 +24,7 @@
 - ✅ **实时监控** - 自动检测文件变化
 
 ### Multi-Model Collaboration（多模型协作）
+基于 [GuDaStudio/skills](https://github.com/GuDaStudio/skills) 实现：
 - ✅ **Codex 集成** - 后端逻辑和算法分析
 - ✅ **Gemini 集成** - 前端 UI 和样式设计
 - ✅ **交叉验证** - 双模型审计确保质量
@@ -40,7 +42,10 @@
 
 **步骤 1: 全局安装（一次性）**
 
-参考 [全局安装指南.md](./全局安装指南.md) 安装 CLAUDE.md 和 Code Index MCP。
+参考 [全局安装指南.md](./全局安装指南.md) 安装：
+- CLAUDE.md（工作流定义）
+- Code Index MCP（代码检索）
+- Multi-Model Skills（Codex + Gemini，可选）
 
 **步骤 2: 项目级安装（每个项目）**
 
@@ -63,32 +68,21 @@ cd /path/to/your-project
 claude
 ```
 
+首次启动会提示批准 `context-monitor` MCP server，点击"批准"继续。
+
 在对话中输入：
 ```
 请检查当前上下文使用率
 ```
 
-### 使用
-
-1. 启动 Claude Code：
-   ```bash
-   claude
-   ```
-
-2. 系统自动激活，你会看到：
-   ```
-   📊 Context monitoring active. Use check_context_usage tool to monitor usage.
-   ```
-
-3. 在对话中要求 Claude 检查：
-   ```
-   请检查当前上下文使用率
-   ```
-
-4. Claude 会自动：
-   - 每 5-10 个工具调用后检查使用率
-   - 根据使用率采取相应行动
-   - 在高使用率时保存状态并提示你执行 `/clear`
+预期输出：
+```json
+{
+  "usage_percent": 15.3,
+  "status": "✅ SAFE",
+  "recommendation": "Context usage is healthy. Continue working normally."
+}
+```
 
 ---
 
@@ -96,26 +90,31 @@ claude
 
 - **Node.js** 18+ (用于安装脚本)
 - **Python** 3.7+ (用于 MCP server)
-- **Bash** (用于 hooks，Windows 需要 Git Bash)
 - **Claude Code** 2.0+
+- **Git Bash** (Windows 用户，用于运行 .sh 脚本)
 
 ---
 
 ## 📁 文件结构
 
-安装后会创建以下文件（所有文件都在 `.claude` 目录下，保持项目根目录整洁）：
+安装后会创建以下文件：
 
 ```
 your-project/
+├── .mcp.json                        # MCP server 配置（项目根目录）
 └── .claude/
     ├── hooks/
-    │   └── capture-session-info.sh       # SessionStart hook
+    │   └── capture-session-info.py  # SessionStart hook
     ├── mcp-servers/
     │   └── context-monitor/
-    │       └── server.py                  # MCP server
-    ├── state/                             # 会话状态目录
-    └── settings.local.json                # Hook 和 MCP 配置
+    │       └── server.py            # MCP server
+    ├── state/                       # 会话状态目录
+    └── settings.local.json          # Hook 配置
 ```
+
+**重要说明**：
+- `.mcp.json` 必须放在项目根目录，不是 `.claude` 文件夹下
+- 所有其他文件都在 `.claude` 目录下，保持项目根目录整洁
 
 ---
 
@@ -138,112 +137,71 @@ your-project/
 ```
 会话开始
   ↓
-SessionStart Hook 捕获 transcript_path
+SessionStart Hook 捕获 transcript_path (macOS/Linux)
   ↓
 写入 /tmp/claude-session-info.json
   ↓
-Claude 定期调用 check_context_usage
+Claude 调用 check_context_usage 工具
   ↓
-MCP Server 计算使用率
+MCP Server 读取 session info 和 transcript
   ↓
-返回状态和建议
+计算使用率并返回建议
   ↓
-Claude 根据使用率采取行动：
-  - < 50%: 继续工作
-  - 50-70%: 注意使用率
-  - 70-85%: 准备保存状态
-  - > 85%: 立即保存并提示 /clear
+Claude 根据建议采取行动
 ```
 
----
-
-## 🛠️ MCP 工具
-
-### check_context_usage
-
-检查当前会话的上下文使用率。
-
-**输出示例：**
-```json
-{
-  "usage_percent": 65.3,
-  "status": "⚠️ WARNING",
-  "recommendation": "Context usage is moderate. Consider completing current task soon."
-}
-```
-
-### save_session_state
-
-保存会话状态到 `.claude/state/current-session.md`。
-
-**使用示例：**
-```javascript
-save_session_state({
-  content: "已完成 Task 1-3，当前在实现用户认证",
-  next_steps: "继续 Task 4: JWT token 刷新"
-})
-```
-
----
-
-## ⚠️ 重要说明
-
-### 限制
-
-- **无法自动执行 /clear** - 这是 Claude Code 的架构限制，必须由用户手动执行
-- **Token 估算不精确** - 使用文件大小估算，可能有 ±10% 的误差
-- **需要 Python 3** - MCP server 需要 Python 3 环境
-
-### 最佳实践
-
-1. **信任 Claude 的判断** - 当 Claude 提示保存状态时，立即执行
-2. **定期检查** - 在长时间会话中，主动要求 Claude 检查使用率
-3. **及时清除** - 不要等到 100% 才清除，70-80% 就应该考虑
+**Windows 用户注意**：
+- SessionStart hook 在 Windows 上不工作（[已知 bug](https://github.com/anthropics/claude-code/issues/14219)）
+- 需要在 CLAUDE.md 中添加强制指令，让 Claude 主动调用 `check_context_usage`
+- 或者手动提醒 Claude 检查上下文使用率
 
 ---
 
 ## 🐛 故障排查
 
-### Hook 没有运行
+### Q: Windows 上 SessionStart hook 不执行
 
-```bash
-# 检查执行权限
-ls -l .claude/hooks/capture-session-info.sh
+**A**: 这是 Claude Code 在 Windows 上的已知 bug ([Issue #14219](https://github.com/anthropics/claude-code/issues/14219))。
 
-# 手动测试
-echo '{"session_id":"test","transcript_path":"/tmp/test.jsonl","cwd":"."}' | \
-  bash .claude/hooks/capture-session-info.sh
+**Workaround**: 在 CLAUDE.md 中添加强制指令：
+```markdown
+- **会话启动强制检查**：每次会话开始（包括 /resume 后）必须立即调用 `check_context_usage` 检查上下文使用率，无需等待用户请求。这是强制性的第一步操作。
 ```
 
-### MCP Server 无法启动
+### Q: MCP server 工具不可用
 
-```bash
-# 检查 Python
-python3 --version
+**A**: 检查：
+1. `.mcp.json` 是否在项目根目录（不是 `.claude` 文件夹下）
+2. 重启 Claude Code
+3. 首次使用时批准 MCP server
 
-# 手动运行
-python3 .claude/mcp-servers/context-monitor/server.py
+### Q: Python 找不到
+
+**A**: 安装 Python 3：
+- macOS: `brew install python3`
+- Ubuntu: `sudo apt install python3`
+- Windows: https://www.python.org/downloads/
+
+Windows 用户确保 Python 在 PATH 中：
+```powershell
+python --version
 ```
 
 ### 更多问题
 
-查看详细文档：`.claude/CONTEXT_MONITORING.md`
+参考 [项目级安装指南.md](./项目级安装指南.md) 的故障排查部分。
 
 ---
 
 ## 📚 文档
 
-### 核心文档
-- **[CLAUDE.md](./CLAUDE.md)** - 完整工作流定义和资源矩阵 ⭐
-- **[整合工作流指南.md](./整合工作流指南.md)** - 整合工作流快速指南 ⭐
-
-### 安装和使用
-- **[全局安装指南.md](./全局安装指南.md)** - 安装 CLAUDE.md 和 Code Index MCP 到全局
-- **[项目级安装指南.md](./项目级安装指南.md)** - 安装 Context Monitor 到项目（必需）
-
-### 详细说明
-- [上下文监控详解.md](./上下文监控详解.md) - Context Monitor 详细说明
-- [CHANGELOG.md](./CHANGELOG.md) - 版本变更记录
+- **[文档导航.md](./文档导航.md)** - 快速找到你需要的文档
+- **[项目级安装指南.md](./项目级安装指南.md)** - 详细安装说明
+- **[全局安装指南.md](./全局安装指南.md)** - 全局组件安装
+- **[上下文监控详解.md](./上下文监控详解.md)** - 深入理解原理
+- **[整合工作流指南.md](./整合工作流指南.md)** - 使用指南
+- **[CLAUDE.md](./CLAUDE.md)** - 完整工作流定义
+- **[CHANGELOG.md](./CHANGELOG.md)** - 版本变更记录
 
 ---
 
@@ -253,18 +211,14 @@ python3 .claude/mcp-servers/context-monitor/server.py
 
 ---
 
-## 📄 许可证
+## 📄 License
 
-MIT License
+MIT License - 详见 [LICENSE](./LICENSE) 文件
 
 ---
 
 ## 🙏 致谢
 
-本项目基于 Claude Code 的 Hooks 和 MCP 系统构建。
-
----
-
-**版本**: 1.0.0
-**最后更新**: 2025-12-16
-**维护者**: Project Team
+- [Claude Code](https://claude.com/claude-code) - Anthropic 的官方 CLI 工具
+- [GuDaStudio/skills](https://github.com/GuDaStudio/skills) - 多模型协作技能
+- [code-index-mcp](https://github.com/modelcontextprotocol/servers/tree/main/src/code-index) - 代码检索 MCP server
