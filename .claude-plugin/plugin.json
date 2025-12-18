@@ -5,10 +5,7 @@
   "author": {
     "name": "Context Monitor Team"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/wuciqiang/context-monitor"
-  },
+  "repository": "https://github.com/wuciqiang/context-monitor",
   "keywords": [
     "context-monitoring",
     "workflow",
