@@ -11,5 +11,9 @@
     "workflow",
     "multi-model",
     "code-search"
-  ]
+  ],
+  "statusline": {
+    "command": "python .claude/mcp-servers/context-monitor/statusline.py",
+    "refreshInterval": 5000
+  }
 }
