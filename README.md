@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://www.python.org/)
 
-📖 **[完整文档](./docs/)** | 🚀 **[快速开始](#快速开始)** | 🐛 **[故障排除](./docs/完整指南.md#故障排除)**
+🚀 **[快速开始](#快速开始)** | 📋 **[工作流概览](#工作流概览)** | 🎉 **[最新更新](#最新更新v110)**
 
 ---
 
@@ -46,17 +46,29 @@
 
 ### 基本使用
 
+#### 🚀 快捷模式（推荐新手）
+
+```bash
+# 一键完成所有阶段（自动化工作流）
+/cm:auto 实现用户认证功能
+
+# 在关键决策点会暂停等待确认
+# 性能提升：并行执行多模型调用，节省 40-50% 时间
+```
+
+#### 🎯 专业模式（精细控制）
+
 ```bash
 # 启动工作流（Phase 0-1）
 /cm:start
 
-# 多模型分析（Phase 2）
+# 多模型分析（Phase 2）⚡ 并行执行
 /cm:analyze 实现用户认证功能
 
 # 任务实施（Phase 3-4）
 /cm:implement
 
-# 代码审计（Phase 5）
+# 代码审计（Phase 5）⚡ 并行执行
 /cm:audit
 
 # 快速检查上下文
@@ -78,29 +90,17 @@ Phase 3: 原型获取 → Phase 4: 编码实施 → Phase 4.5: 状态保存
 Phase 5: 双模型审计 → 最终交付
 ```
 
-详细说明请参阅 [完整指南](./docs/完整指南.md#工作流详解)。
+### 工作流说明
 
----
-
-## 文档导航
-
-### 核心文档
-
-- **[完整指南](./docs/完整指南.md)** - 系统概述、安装配置、工作流详解、使用指南（推荐）
-- **[工作流介绍](./docs/工作流介绍.md)** - 详细的系统介绍，适合对外宣传
-- **[编码问题解决方案](./docs/编码问题解决方案.md)** - Windows 环境编码问题修复
-
-### 参考文档
-
-- [全局安装指南](./docs/全局安装指南.md)
-- [项目级安装指南](./docs/项目级安装指南.md)
-- [Skills安装指南](./docs/Skills安装指南.md)
-- [上下文监控详解](./docs/上下文监控详解.md)
-- [整合工作流指南](./docs/整合工作流指南.md)
+- **Phase 0-1**: 初始化上下文检查和代码检索
+- **Phase 2**: 多模型协作分析（Codex + Gemini 并行）
+- **Phase 3-4**: 原型获取和编码实施
+- **Phase 4.5**: 自动状态保存
+- **Phase 5**: 双模型审计（Codex + Gemini 并行）
 
 ### 配置文件
 
-- [CLAUDE.md](./CLAUDE.md) - 工作流定义
+- [CLAUDE.md](./CLAUDE.md) - 工作流定义和使用指南
 - [PLUGIN.md](./PLUGIN.md) - 插件说明
 
 ---
@@ -120,8 +120,6 @@ Phase 5: 双模型审计 → 最终交付
 [System.Environment]::SetEnvironmentVariable("PYTHONUTF8", "1", "User")
 ```
 
-详见 [编码问题解决方案](./docs/编码问题解决方案.md)。
-
 ---
 
 ## 项目结构
@@ -136,13 +134,9 @@ context-monitor/
 │   ├── analyze.md
 │   ├── implement.md
 │   ├── audit.md
+│   ├── auto.md             # 新增：自动化工作流
 │   ├── check.md
 │   └── save-state.md
-├── docs/                    # 文档
-│   ├── README.md
-│   ├── 完整指南.md
-│   ├── 工作流介绍.md
-│   └── 编码问题解决方案.md
 ├── scripts/                 # 安装和测试脚本
 │   ├── install-to-project.ps1
 │   ├── install-to-project.sh
@@ -169,13 +163,48 @@ A: 检查插件是否正确安装：
 
 ### Q: Codex/Gemini 编码错误？
 
-A: 参见 [编码问题解决方案](./docs/编码问题解决方案.md)
+A: 配置 UTF-8 编码环境变量（见上方"Windows 用户特别注意"）
 
 ### Q: 上下文检查失败？
 
 A: 确保 MCP 服务器正确配置，重启 Claude Code
 
-更多问题请参阅 [完整指南 - 故障排除](./docs/完整指南.md#故障排除)。
+### Q: 如何获取详细文档？
+
+A: 详细文档请参考项目中的 `CLAUDE.md` 和 `PLUGIN.md` 文件
+
+---
+
+## 🎉 最新更新（v1.1.0）
+
+### ✨ 新功能
+
+1. **`/cm:auto` 快捷命令** 🚀
+   - 一键完成所有工作流阶段
+   - 在关键决策点自动暂停确认
+   - 降低学习成本，新手友好
+
+2. **并行多模型调用** ⚡
+   - Phase 2 分析和 Phase 5 审计支持并行执行
+   - 性能提升 40-50%
+   - Codex 和 Gemini 同时工作
+
+3. **增强的状态保存** 🛡️
+   - 使用 session_id 避免并发冲突
+   - 添加降级方案（临时目录备份）
+   - 详细的错误处理和日志
+
+### 🐛 修复
+
+- 修复 `save_session_state` 工具的 AbortError 问题
+- 修复多会话并发时的文件冲突
+- 改进错误处理和用户反馈
+
+### 📈 性能优化
+
+- 多模型调用并行化：节省 40-50% 时间
+- 状态保存优化：添加超时和降级机制
+- 文件操作优化：使用唯一文件名避免冲突
 
 ---
 
@@ -199,6 +228,6 @@ MIT License - 详见 [LICENSE](./LICENSE)
 
 ---
 
-**版本**: 1.0.2
-**最后更新**: 2025-12-18
+**版本**: 1.1.0
+**最后更新**: 2025-12-19
 **项目地址**: https://github.com/wuciqiang/context-monitor

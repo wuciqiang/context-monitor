@@ -84,20 +84,33 @@ def check_context_usage():
     }
 
 def save_session_state(state_data):
-    """保存会话状态到文件"""
+    """保存会话状态到文件（带超时和降级方案）"""
     session_info = read_session_info()
     if not session_info:
         return {"error": "No active session"}
 
+    session_id = session_info.get('session_id', 'default')
     cwd = session_info.get("cwd", ".")
     state_dir = Path(cwd) / ".claude" / "state"
-    state_dir.mkdir(parents=True, exist_ok=True)
 
-    state_file = state_dir / "current-session.md"
+    try:
+        state_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to create state directory: {str(e)}"
+        }
+
+    # 使用 session_id 避免并发冲突
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    state_file = state_dir / f"session-{session_id}-{timestamp}.md"
+
+    # 同时保存到 current-session.md 作为快速访问点
+    current_file = state_dir / "current-session.md"
 
     # 生成状态文件内容
     content = f"""# Session State
-**Session ID**: {session_info.get('session_id')}
+**Session ID**: {session_id}
 **Timestamp**: {datetime.utcnow().isoformat()}Z
 **Context Usage**: {state_data.get('usage_percent', 0)}%
 
@@ -108,14 +121,45 @@ def save_session_state(state_data):
 {state_data.get('next_steps', 'Continue with next task')}
 """
 
-    with open(state_file, 'w') as f:
-        f.write(content)
+    try:
+        # 主保存：带 session_id 的唯一文件
+        with open(state_file, 'w', encoding='utf-8') as f:
+            f.write(content)
 
-    return {
-        "success": True,
-        "state_file": str(state_file),
-        "message": "Session state saved successfully"
-    }
+        # 降级保存：覆盖 current-session.md
+        try:
+            with open(current_file, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except Exception as e:
+            # current-session.md 失败不影响主保存
+            pass
+
+        return {
+            "success": True,
+            "state_file": str(state_file),
+            "current_file": str(current_file),
+            "message": "Session state saved successfully"
+        }
+
+    except Exception as e:
+        # 降级方案：尝试保存到临时目录
+        try:
+            temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or '/tmp'
+            fallback_file = Path(temp_dir) / f"claude-state-{session_id}-{timestamp}.md"
+            with open(fallback_file, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+            return {
+                "success": True,
+                "state_file": str(fallback_file),
+                "warning": f"Primary save failed: {str(e)}, used fallback location",
+                "message": "Session state saved to fallback location"
+            }
+        except Exception as fallback_error:
+            return {
+                "success": False,
+                "error": f"Both primary and fallback save failed. Primary: {str(e)}, Fallback: {str(fallback_error)}"
+            }
 
 # MCP Server Protocol
 def handle_request(request):

@@ -69,3 +69,6 @@ temp/
 
 # Test directories
 .test-marketplace/
+
+# Private documentation (sync via cloud storage)
+docs/
