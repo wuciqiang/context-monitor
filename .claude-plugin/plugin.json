@@ -11,5 +11,23 @@
     "workflow",
     "multi-model",
     "code-search"
-  ]
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/capture-session.py"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "context-monitor": {
+      "command": "python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/server.py"]
+    }
+  }
 }

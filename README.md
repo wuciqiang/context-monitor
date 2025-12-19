@@ -34,15 +34,38 @@
 ### 插件安装（推荐）
 
 ```bash
-# 1. 添加 marketplace
-/plugin marketplace add https://github.com/wuciqiang/context-monitor
+# 1. 添加 marketplace（使用简化格式）
+/plugin marketplace add wuciqiang/context-monitor
 
-# 2. 安装插件
+# 2. 安装插件（默认安装到 user scope，全局可用）
 /plugin install cm
 
 # 3. 验证安装
 /cm:check
 ```
+
+**安装说明**：
+- 插件会自动配置 SessionStart hook 和 MCP 服务器
+- 默认安装到 user scope（全局可用，所有项目都能使用）
+- 如需仅在当前项目使用：`/plugin install cm --scope project`
+- 如需本地开发测试：`/plugin install cm --scope local`
+
+### 可选：配置状态栏显示
+
+如果想在 Claude Code 状态栏实时显示上下文使用率，需要手动配置：
+
+在项目的 `.claude/settings.json` 中添加：
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "python ${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/statusline.py",
+    "padding": 0
+  }
+}
+```
+
+配置后重启 Claude Code，状态栏会显示：✅ Context: 25.3%
 
 ### 基本使用
 
@@ -154,12 +177,37 @@ context-monitor/
 
 ## 常见问题
 
+### Q: 插件安装失败？
+
+A: 使用正确的命令格式：
+```bash
+# 正确格式（简化）
+/plugin marketplace add wuciqiang/context-monitor
+
+# 错误格式（不要使用完整 URL）
+/plugin marketplace add https://github.com/wuciqiang/context-monitor
+```
+
 ### Q: 插件命令不可用？
 
-A: 检查插件是否正确安装：
+A: 检查插件是否正确安装和启用：
 ```bash
 /plugin list
 ```
+
+### Q: hooks 和 MCP 服务器需要手动配置吗？
+
+A: 不需要！插件安装后会自动配置：
+- SessionStart hook 自动捕获会话信息
+- MCP 服务器自动启动提供 `check_context_usage` 和 `save_session_state` 工具
+- 只有 statusline（状态栏显示）需要手动配置（可选）
+
+### Q: 插件是全局的还是项目级的？
+
+A: 取决于安装时的 scope 参数：
+- 默认（user scope）：全局可用，所有项目都能使用
+- `--scope project`：仅当前项目可用，配置会提交到 git
+- `--scope local`：仅当前项目可用，配置不提交到 git（适合开发测试）
 
 ### Q: Codex/Gemini 编码错误？
 
@@ -167,7 +215,7 @@ A: 配置 UTF-8 编码环境变量（见上方"Windows 用户特别注意"）
 
 ### Q: 上下文检查失败？
 
-A: 确保 MCP 服务器正确配置，重启 Claude Code
+A: 重启 Claude Code 让 SessionStart hook 生效，然后再试
 
 ### Q: 如何获取详细文档？
 
