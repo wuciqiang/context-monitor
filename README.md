@@ -276,6 +276,6 @@ MIT License - 详见 [LICENSE](./LICENSE)
 
 ---
 
-**版本**: 1.1.0
+**版本**: 1.1.1
 **最后更新**: 2025-12-19
 **项目地址**: https://github.com/wuciqiang/context-monitor

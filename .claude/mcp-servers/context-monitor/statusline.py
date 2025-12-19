@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Context Monitor Statusline
 实时显示上下文使用率在 Claude Code 状态栏
@@ -6,7 +7,13 @@ Context Monitor Statusline
 
 import json
 import os
+import sys
 from pathlib import Path
+
+# 强制 UTF-8 输出（Windows 兼容）
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def read_session_info():
     """读取会话信息"""
