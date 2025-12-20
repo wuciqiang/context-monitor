@@ -18,14 +18,16 @@ description: 保存会话状态（Phase 4.5）
    - 70-85% (HIGH)：准备保存状态
    - > 85% (CRITICAL)：立即保存状态
 
-3. **保存状态**
-   - 调用 `save_session_state` 工具
+3. **保存状态** (带降级方案)
+   - **主方案**: 调用 `save_session_state` MCP 工具 (超时 5 秒)
+   - **降级方案**: 如 MCP 失败，直接使用 Write 工具写入
    - 保存内容：
      * 已完成任务
      * 当前任务
      * 下一步计划
      * 代码变更摘要
      * 待审计文件
+   - 保存路径: `.claude/state/current-session.md`
 
 4. **用户提示**
    - 显示状态文件路径

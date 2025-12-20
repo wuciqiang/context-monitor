@@ -8,8 +8,10 @@ description: 快速检查上下文使用率
 
 ## 执行步骤
 
-1. **调用工具**
-   - 调用 `check_context_usage` 工具
+1. **调用工具** (带降级方案)
+   - **主方案**: 调用 `check_context_usage` MCP 工具
+   - **降级方案**: 如 MCP 失败，读取 statusline 临时文件
+   - 获取实时上下文使用率
 
 2. **解读结果**
    - 显示使用率百分比
