@@ -50,22 +50,10 @@
 - 如需仅在当前项目使用：`/plugin install cm --scope project`
 - 如需本地开发测试：`/plugin install cm --scope local`
 
-### 可选：配置状态栏显示
-
-如果想在 Claude Code 状态栏实时显示上下文使用率，需要手动配置：
-
-在项目的 `.claude/settings.json` 中添加：
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "python ${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/statusline.py",
-    "padding": 0
-  }
-}
-```
-
-配置后重启 Claude Code，状态栏会显示：✅ Context: 25.3%
+**状态栏显示**：插件已自动配置状态栏
+- 首次安装后重启 Claude Code 即可看到状态栏
+- 显示格式：`[OK] Context: 25.3%`
+- 如未显示,执行 `/plugin uninstall cm` 后重新安装
 
 ### 基本使用
 
@@ -276,6 +264,6 @@ MIT License - 详见 [LICENSE](./LICENSE)
 
 ---
 
-**版本**: 1.1.1
-**最后更新**: 2025-12-19
+**版本**: 1.1.2
+**最后更新**: 2025-12-20
 **项目地址**: https://github.com/wuciqiang/context-monitor

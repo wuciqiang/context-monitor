@@ -1,22 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Context Monitor Statusline
-实时显示上下文使用率在 Claude Code 状态栏
-"""
-
 import json
 import os
 import sys
 from pathlib import Path
 
-# 强制 UTF-8 输出（Windows 兼容）
 if sys.platform == 'win32':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def read_session_info():
-    """读取会话信息"""
     temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or '/tmp'
     session_file = Path(temp_dir) / "claude-session-info.json"
     if not session_file.exists():
@@ -27,36 +20,30 @@ def read_session_info():
     except:
         return None
 
-def get_transcript_size(transcript_path):
-    """获取 transcript 文件大小"""
+def estimate_usage_from_file(transcript_path):
+    """基于文件大小估算,但限制最大值为100%"""
     try:
-        return os.path.getsize(transcript_path)
+        size = os.path.getsize(transcript_path)
+        # 假设平均每个token 4字节,200k tokens = 800KB
+        estimated_tokens = size / 4
+        usage = (estimated_tokens / 200000) * 100
+        # 限制最大100%
+        return min(usage, 100.0)
     except:
         return 0
 
-def estimate_token_usage(file_size_bytes):
-    """估算 token 使用量"""
-    return file_size_bytes / 4
-
-def calculate_usage_percent(estimated_tokens, max_tokens=200000):
-    """计算使用率"""
-    return (estimated_tokens / max_tokens) * 100
-
 def get_status_icon(usage_percent):
-    """根据使用率返回状态图标"""
     if usage_percent < 50:
-        return "✅"
+        return "[OK]"
     elif usage_percent < 70:
-        return "⚠️"
+        return "[WARN]"
     elif usage_percent < 85:
-        return "🔴"
+        return "[HIGH]"
     else:
-        return "🚨"
+        return "[CRIT]"
 
 def main():
-    """主函数"""
     session_info = read_session_info()
-
     if not session_info:
         print("Context: N/A")
         return
@@ -66,10 +53,7 @@ def main():
         print("Context: N/A")
         return
 
-    file_size = get_transcript_size(transcript_path)
-    estimated_tokens = estimate_token_usage(file_size)
-    usage_percent = calculate_usage_percent(estimated_tokens)
-
+    usage_percent = estimate_usage_from_file(transcript_path)
     icon = get_status_icon(usage_percent)
     print(f"{icon} Context: {usage_percent:.1f}%")
 

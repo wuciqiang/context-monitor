@@ -1,7 +1,7 @@
 {
   "name": "cm",
   "description": "智能化的 Claude Code 开发系统：上下文监控 + 代码检索 + 多模型协作",
-  "version": "1.1.1",
+  "version": "1.1.3",
   "author": {
     "name": "Context Monitor Team"
   },
@@ -27,7 +27,14 @@
   "mcpServers": {
     "context-monitor": {
       "command": "python",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/server.py"]
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/server.py"
+      ]
     }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "python ${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/statusline.py",
+    "padding": 0
   }
 }

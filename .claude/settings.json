@@ -1,7 +1,7 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "python F:\\LayaAir-GitHub\\context-monitor\\.claude\\mcp-servers\\context-monitor\\statusline.py",
+    "command": "python G:/Workspace/context-monitor/.claude/mcp-servers/context-monitor/statusline.py",
     "padding": 0
   },
   "hooks": {
@@ -10,7 +10,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python F:\\LayaAir-GitHub\\context-monitor\\.claude\\mcp-servers\\context-monitor\\capture-session.py"
+            "command": "python G:/Workspace/context-monitor/.claude/mcp-servers/context-monitor/capture-session.py"
           }
         ]
       }

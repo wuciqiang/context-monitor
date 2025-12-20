@@ -59,16 +59,16 @@ def check_context_usage():
 
     # 确定状态和建议
     if usage_percent < 50:
-        status = "✅ SAFE"
+        status = "SAFE"
         recommendation = "Context usage is healthy. Continue working normally."
     elif usage_percent < 70:
-        status = "⚠️ WARNING"
+        status = "WARNING"
         recommendation = "Context usage is moderate. Consider completing current task soon."
     elif usage_percent < 85:
-        status = "🔴 HIGH"
+        status = "HIGH"
         recommendation = "Context usage is high! Complete current task and save state immediately."
     else:
-        status = "🚨 CRITICAL"
+        status = "CRITICAL"
         recommendation = "Context usage is critical! Save state NOW and prompt user to execute /clear"
 
     return {
