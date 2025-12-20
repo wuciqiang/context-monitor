@@ -3,10 +3,9 @@
 > 智能化的 Claude Code 开发工作流系统：上下文监控 + 代码检索 + 多模型协作
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://www.python.org/)
 
-🚀 **[快速开始](#快速开始)** | 📋 **[工作流概览](#工作流概览)** | 🎉 **[最新更新](#最新更新v110)**
+🚀 **[快速开始](#快速开始)** | 📋 **[工作流概览](#工作流概览)** | 🎉 **[最新更新](#最新更新v115)**
 
 ---
 
@@ -14,7 +13,7 @@
 
 ### 🎯 解决的问题
 
-- ❌ 上下文管理混乱 → ✅ 自动监控 + 状态保存
+- ❌ 上下文管理混乱 → ✅ 实时监控 + 自动捕获
 - ❌ 工作流不一致 → ✅ 强制执行标准流程
 - ❌ 代码搜索低效 → ✅ 自然语言查询 + 深度索引
 - ❌ 单一模型局限 → ✅ 多模型协作机制
@@ -23,7 +22,7 @@
 ### 🔧 核心组件
 
 - **Claude Code Plugin** - 6 个 slash commands 强制执行工作流
-- **Context Monitor MCP** - 实时监控上下文使用率
+- **Context Monitor MCP** - 通过 Hook 实时捕获上下文使用率
 - **Code Index MCP** - 语义搜索和符号索引
 - **Multi-Model Skills** - Codex（后端）+ Gemini（前端）协作
 
@@ -44,11 +43,12 @@
 /cm:setup
 
 # 4. 重启 Claude Code
-# 状态栏会显示: [OK] Context: 25.3%
+# 状态栏会显示: ✅ Context: 25.3%
 ```
 
 **就这么简单!** 插件会自动配置:
 - ✅ SessionStart hook (捕获会话信息)
+- ✅ PostToolUse hook (实时捕获上下文使用率)
 - ✅ MCP 服务器 (提供上下文监控工具)
 - ✅ 状态栏显示 (通过 /cm:setup 一键配置)
 
@@ -115,7 +115,6 @@ Phase 5: 双模型审计 → 最终交付
 
 ## 系统要求
 
-- **Node.js** 18+
 - **Python** 3.7+
 - **Claude Code** 2.0+
 
@@ -130,33 +129,36 @@ Phase 5: 双模型审计 → 最终交付
 
 ---
 
-## 项目结构
+## 上下文监控机制
 
-```
-context-monitor/
-├── .claude-plugin/          # 插件配置
-│   ├── plugin.json
-│   └── marketplace.json
-├── commands/                # Slash commands
-│   ├── start.md
-│   ├── analyze.md
-│   ├── implement.md
-│   ├── audit.md
-│   ├── auto.md             # 新增：自动化工作流
-│   ├── check.md
-│   └── save-state.md
-├── scripts/                 # 安装和测试脚本
-│   ├── install-to-project.ps1
-│   ├── install-to-project.sh
-│   ├── install-global.ps1
-│   ├── install-global.sh
-│   └── fix-encoding.ps1
-├── templates/               # 配置模板
-├── workflows/               # 工作流定义
-├── CLAUDE.md               # 工作流定义
-├── PLUGIN.md               # 插件说明
-└── README.md               # 本文件
-```
+### 🎯 核心原理
+
+通过 **PostToolUse Hook** 拦截每次工具调用后的 usage 数据，实现**实时监控运行时上下文**。
+
+### 🔧 工作流程
+
+1. **SessionStart Hook**: 捕获会话信息（session_id, transcript_path, cwd）
+2. **PostToolUse Hook**: 每次工具调用后自动触发
+   - 读取 stdin 的 usage 数据
+   - 计算 context_tokens = cache_read + input + cache_creation
+   - 保存到临时文件 `claude-current-usage.json`
+3. **StatusLine**: 实时读取临时文件显示使用率
+4. **MCP Tool**: `/cm:check` 命令读取相同数据
+
+### ✅ 优势
+
+- **准确性**: 使用 Claude API 的实际 usage 数据
+- **实时性**: 每次工具调用后自动更新
+- **通用性**: 适用于新会话和恢复会话
+- **一致性**: 与官方 `/context` 使用相同数据源
+
+### 📊 显示格式
+
+状态栏会根据使用率显示不同图标:
+- ✅ < 50%: 安全
+- ⚠️ 50-70%: 警告
+- 🔶 70-85%: 高使用率
+- 🚨 > 85%: 危险
 
 ---
 
@@ -173,34 +175,27 @@ A: 使用正确的命令格式：
 /plugin marketplace add https://github.com/wuciqiang/context-monitor
 ```
 
-### Q: 插件命令不可用？
+### Q: 状态栏显示 0% 或 --？
 
-A: 检查插件是否正确安装和启用：
-```bash
-/plugin list
-```
+A:
+- **显示 --**: PostToolUse Hook 还未触发（会话刚启动）
+- **显示 0%**: 使用了旧版本的 statusline.py
+- **解决方法**:
+  1. 调用任意工具（Read/Write/Bash等）触发 Hook
+  2. 确保 settings.json 中 statusLine 路径正确
+  3. 重启 Claude Code
 
 ### Q: hooks 和 MCP 服务器需要手动配置吗？
 
 A: 不需要！插件安装后会自动配置：
 - SessionStart hook 自动捕获会话信息
-- MCP 服务器自动启动提供 `check_context_usage` 和 `save_session_state` 工具
-- 只有 statusline（状态栏显示）需要手动配置（可选）
-
-### Q: 插件是全局的还是项目级的？
-
-A: 取决于安装时的 scope 参数：
-- 默认（user scope）：全局可用，所有项目都能使用
-- `--scope project`：仅当前项目可用，配置会提交到 git
-- `--scope local`：仅当前项目可用，配置不提交到 git（适合开发测试）
+- PostToolUse hook 自动捕获 usage 数据
+- MCP 服务器自动启动提供工具
+- 只有 statusline（状态栏显示）需要通过 `/cm:setup` 配置
 
 ### Q: Codex/Gemini 编码错误？
 
 A: 配置 UTF-8 编码环境变量（见上方"Windows 用户特别注意"）
-
-### Q: 上下文检查失败？
-
-A: 重启 Claude Code 让 SessionStart hook 生效，然后再试
 
 ### Q: 如何获取详细文档？
 
@@ -208,36 +203,36 @@ A: 详细文档请参考项目中的 `CLAUDE.md` 和 `PLUGIN.md` 文件
 
 ---
 
-## 🎉 最新更新（v1.1.0）
+## 🎉 最新更新（v1.1.5）
 
-### ✨ 新功能
+### ✨ 核心突破
 
-1. **`/cm:auto` 快捷命令** 🚀
-   - 一键完成所有工作流阶段
-   - 在关键决策点自动暂停确认
-   - 降低学习成本，新手友好
+1. **Hook 注入机制** 🎯
+   - 通过 PostToolUse Hook 实时捕获运行时 usage 数据
+   - 完美解决恢复会话无法获取上下文的问题
+   - 与官方 `/context` 使用相同数据源，100% 准确
 
-2. **并行多模型调用** ⚡
-   - Phase 2 分析和 Phase 5 审计支持并行执行
-   - 性能提升 40-50%
-   - Codex 和 Gemini 同时工作
+2. **实时上下文监控** ⚡
+   - 每次工具调用后自动更新
+   - 状态栏实时显示准确使用率
+   - 支持所有会话类型（新会话/恢复会话）
 
-3. **增强的状态保存** 🛡️
-   - 使用 session_id 避免并发冲突
-   - 添加降级方案（临时目录备份）
-   - 详细的错误处理和日志
+3. **自动化配置** 📦
+   - SessionStart + PostToolUse 双 Hook 自动配置
+   - 无需手动编辑配置文件
+   - 一键安装即可使用
 
 ### 🐛 修复
 
-- 修复 `save_session_state` 工具的 AbortError 问题
-- 修复多会话并发时的文件冲突
-- 改进错误处理和用户反馈
+- 修复恢复会话显示 0% 的问题
+- 修复状态栏路径配置错误
+- 移除失效的估算方案
 
-### 📈 性能优化
+### 📈 技术改进
 
-- 多模型调用并行化：节省 40-50% 时间
-- 状态保存优化：添加超时和降级机制
-- 文件操作优化：使用唯一文件名避免冲突
+- 采用 Hook 注入获取运行时数据
+- 简化代码逻辑，移除冗余计算
+- 提升准确性和可靠性
 
 ---
 
@@ -261,6 +256,6 @@ MIT License - 详见 [LICENSE](./LICENSE)
 
 ---
 
-**版本**: 1.1.2
+**版本**: 1.1.5
 **最后更新**: 2025-12-20
 **项目地址**: https://github.com/wuciqiang/context-monitor

@@ -32,6 +32,13 @@ def main():
                 # 按修改时间排序，取最新的
                 transcript_path = str(max(jsonl_files, key=lambda p: p.stat().st_mtime))
 
+    # 如果 session_id 是 unknown，尝试从 transcript_path 文件名提取
+    if session_id == "unknown" and transcript_path:
+        # transcript_path 格式: .../e58f2582-21dd-4ae9-bcfb-92a53c376293.jsonl
+        filename = Path(transcript_path).stem
+        if len(filename) == 36 and filename.count('-') == 4:  # UUID 格式
+            session_id = filename
+
     # 保存到临时文件
     temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or '/tmp'
     session_file = Path(temp_dir) / "claude-session-info.json"

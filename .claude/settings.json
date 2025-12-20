@@ -14,6 +14,16 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python G:/Workspace/context-monitor/.claude/mcp-servers/context-monitor/capture-usage.py"
+          }
+        ]
+      }
     ]
   }
 }

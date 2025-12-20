@@ -23,65 +23,48 @@ def read_session_info():
     except Exception as e:
         return None
 
-def get_transcript_size(transcript_path):
-    """获取 transcript 文件大小（字节）"""
-    try:
-        return os.path.getsize(transcript_path)
-    except:
-        return 0
-
-def estimate_token_usage(file_size_bytes):
-    """估算 token 使用量（粗略估计：1 token ≈ 4 bytes）"""
-    return file_size_bytes / 4
-
-def calculate_usage_percent(estimated_tokens, max_tokens=200000):
-    """计算使用率百分比"""
-    return (estimated_tokens / max_tokens) * 100
-
 def check_context_usage():
     """检查当前上下文使用率"""
-    session_info = read_session_info()
+    temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or '/tmp'
+    usage_file = Path(temp_dir) / "claude-current-usage.json"
 
-    if not session_info:
+    if not usage_file.exists():
         return {
-            "error": "No active session found. SessionStart hook may not be configured."
+            "error": "No usage data available. PostToolUse hook may not be configured or no tools have been used yet."
         }
 
-    transcript_path = session_info.get("transcript_path")
-    if not transcript_path or not os.path.exists(transcript_path):
+    try:
+        with open(usage_file) as f:
+            data = json.load(f)
+            context_tokens = data.get('context_tokens', 0)
+            usage_percent = data.get('usage_percent', 0)
+
+        # 确定状态和建议
+        if usage_percent < 50:
+            status = "SAFE"
+            recommendation = "Context usage is healthy. Continue working normally."
+        elif usage_percent < 70:
+            status = "WARNING"
+            recommendation = "Context usage is moderate. Consider completing current task soon."
+        elif usage_percent < 85:
+            status = "HIGH"
+            recommendation = "Context usage is high! Complete current task and save state immediately."
+        else:
+            status = "CRITICAL"
+            recommendation = "Context usage is critical! Save state NOW and prompt user to execute /clear"
+
         return {
-            "error": f"Transcript file not found: {transcript_path}"
+            "context_tokens": context_tokens,
+            "usage_percent": round(usage_percent, 1),
+            "max_tokens": 200000,
+            "status": status,
+            "recommendation": recommendation,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
         }
-
-    file_size = get_transcript_size(transcript_path)
-    estimated_tokens = estimate_token_usage(file_size)
-    usage_percent = calculate_usage_percent(estimated_tokens)
-
-    # 确定状态和建议
-    if usage_percent < 50:
-        status = "SAFE"
-        recommendation = "Context usage is healthy. Continue working normally."
-    elif usage_percent < 70:
-        status = "WARNING"
-        recommendation = "Context usage is moderate. Consider completing current task soon."
-    elif usage_percent < 85:
-        status = "HIGH"
-        recommendation = "Context usage is high! Complete current task and save state immediately."
-    else:
-        status = "CRITICAL"
-        recommendation = "Context usage is critical! Save state NOW and prompt user to execute /clear"
-
-    return {
-        "session_id": session_info.get("session_id"),
-        "transcript_path": transcript_path,
-        "file_size_mb": round(file_size / 1024 / 1024, 2),
-        "estimated_tokens": int(estimated_tokens),
-        "usage_percent": round(usage_percent, 1),
-        "max_tokens": 200000,
-        "status": status,
-        "recommendation": recommendation,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
-    }
+    except Exception as e:
+        return {
+            "error": f"Failed to read usage data: {str(e)}"
+        }
 
 def save_session_state(state_data):
     """保存会话状态到文件（带超时和降级方案）"""
