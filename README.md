@@ -52,6 +52,32 @@
 - ✅ MCP 服务器 (提供上下文监控工具)
 - ✅ 状态栏显示 (通过 /cm:setup 一键配置)
 
+### ⚠️ 重要：全局配置
+
+**插件安装后，还需要在全局 CLAUDE.md 中添加工作流提示词：**
+
+```bash
+# 1. 打开全局配置文件
+# Windows: C:\Users\<用户名>\.claude\CLAUDE.md
+# macOS/Linux: ~/.claude/CLAUDE.md
+
+# 2. 将本项目的 CLAUDE.md 内容复制到全局文件中
+# 或者直接复制文件：
+cp ./CLAUDE.md ~/.claude/CLAUDE.md  # macOS/Linux
+copy CLAUDE.md %USERPROFILE%\.claude\CLAUDE.md  # Windows
+```
+
+**为什么需要全局配置？**
+- 插件提供的 slash commands 只是触发器
+- 实际的工作流逻辑（Phase 0-5）定义在 CLAUDE.md 中
+- 全局配置确保所有项目都能使用统一的工作流
+
+**配置后的效果：**
+- ✅ 所有项目自动应用工作流
+- ✅ 强制执行 Phase 0-5 流程
+- ✅ 自动触发多模型协作
+- ✅ 统一的代码质量标准
+
 ### 基本使用
 
 #### 🚀 快捷模式（推荐新手）
