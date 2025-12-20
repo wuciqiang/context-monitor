@@ -31,10 +31,5 @@
         "${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/server.py"
       ]
     }
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "python ${CLAUDE_PLUGIN_ROOT}/.claude/mcp-servers/context-monitor/statusline.py",
-    "padding": 0
   }
 }

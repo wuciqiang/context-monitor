@@ -34,26 +34,23 @@
 ### 插件安装（推荐）
 
 ```bash
-# 1. 添加 marketplace（使用简化格式）
+# 1. 添加 marketplace
 /plugin marketplace add wuciqiang/context-monitor
 
-# 2. 安装插件（默认安装到 user scope，全局可用）
+# 2. 安装插件
 /plugin install cm
 
-# 3. 验证安装
-/cm:check
+# 3. 配置状态栏（一键完成）
+/cm:setup
+
+# 4. 重启 Claude Code
+# 状态栏会显示: [OK] Context: 25.3%
 ```
 
-**安装说明**：
-- 插件会自动配置 SessionStart hook 和 MCP 服务器
-- 默认安装到 user scope（全局可用，所有项目都能使用）
-- 如需仅在当前项目使用：`/plugin install cm --scope project`
-- 如需本地开发测试：`/plugin install cm --scope local`
-
-**状态栏显示**：插件已自动配置状态栏
-- 首次安装后重启 Claude Code 即可看到状态栏
-- 显示格式：`[OK] Context: 25.3%`
-- 如未显示,执行 `/plugin uninstall cm` 后重新安装
+**就这么简单!** 插件会自动配置:
+- ✅ SessionStart hook (捕获会话信息)
+- ✅ MCP 服务器 (提供上下文监控工具)
+- ✅ 状态栏显示 (通过 /cm:setup 一键配置)
 
 ### 基本使用
 
