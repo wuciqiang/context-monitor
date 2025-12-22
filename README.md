@@ -201,6 +201,21 @@ A: 使用正确的命令格式：
 /plugin marketplace add https://github.com/wuciqiang/context-monitor
 ```
 
+### Q: PostToolUse Hook 报错找不到文件？
+
+A: 这是因为插件从旧路径安装，需要重新安装：
+```bash
+# 1. 卸载旧插件
+/plugin uninstall cm@context-monitor-marketplace
+
+# 2. 重新安装
+/plugin install cm
+
+# 3. 重启 Claude Code
+```
+
+**原因**: 插件使用 `${CLAUDE_PLUGIN_ROOT}` 变量动态解析路径，但如果从本地路径安装，路径会被固定。重新从 marketplace 安装可解决此问题。
+
 ### Q: 状态栏显示 0% 或 --？
 
 A:
@@ -282,6 +297,6 @@ MIT License - 详见 [LICENSE](./LICENSE)
 
 ---
 
-**版本**: 1.1.5
-**最后更新**: 2025-12-20
+**版本**: 1.1.6
+**最后更新**: 2025-12-22
 **项目地址**: https://github.com/wuciqiang/context-monitor

@@ -72,3 +72,4 @@ temp/
 
 # Private documentation (sync via cloud storage)
 docs/
+.claude/settings.json
