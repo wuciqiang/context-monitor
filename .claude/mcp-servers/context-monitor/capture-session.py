@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Capture Session Hook
 在会话开始时捕获会话信息并保存到临时文件
@@ -13,8 +14,12 @@ def main():
     # 从 stdin 读取 hook 输入
     try:
         hook_input = json.load(sys.stdin)
-    except:
-        sys.exit(0)
+    except json.JSONDecodeError as e:
+        sys.stderr.write(f"Warning: Invalid JSON input: {e}\n")
+        sys.exit(1)
+    except Exception as e:
+        sys.stderr.write(f"Error: Failed to read hook input: {e}\n")
+        sys.exit(2)
 
     # 提取会话信息
     session_id = hook_input.get("sessionId", "unknown")
@@ -27,10 +32,13 @@ def main():
         claude_dir = Path.home() / ".claude" / "projects"
         if claude_dir.exists():
             # 查找最新的 .jsonl 文件
-            jsonl_files = list(claude_dir.rglob("*.jsonl"))
-            if jsonl_files:
-                # 按修改时间排序，取最新的
-                transcript_path = str(max(jsonl_files, key=lambda p: p.stat().st_mtime))
+            try:
+                jsonl_files = list(claude_dir.rglob("*.jsonl"))
+                if jsonl_files:
+                    # 按修改时间排序，取最新的
+                    transcript_path = str(max(jsonl_files, key=lambda p: p.stat().st_mtime))
+            except Exception as e:
+                sys.stderr.write(f"Warning: Failed to find transcript files: {e}\n")
 
     # 如果 session_id 是 unknown，尝试从 transcript_path 文件名提取
     if session_id == "unknown" and transcript_path:
@@ -52,8 +60,12 @@ def main():
     try:
         with open(session_file, 'w', encoding='utf-8') as f:
             json.dump(session_info, f, indent=2)
-    except:
-        pass
+    except IOError as e:
+        sys.stderr.write(f"Error: Failed to write session file: {e}\n")
+        sys.exit(2)
+    except Exception as e:
+        sys.stderr.write(f"Error: Unexpected error: {e}\n")
+        sys.exit(2)
 
 if __name__ == "__main__":
     main()
