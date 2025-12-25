@@ -10,6 +10,7 @@
 - **最小作用域**：仅针对需求改动，严禁影响现有功能
 - **并行执行**：Codex/Gemini 调用必须 `run in background`，不设 timeout
 - **强制遵循**：严格执行所有 Phase；跳过任何 Phase 视为危险操作，需立即终止并报告原因
+- **claude-mem 集成**：如已安装，自动持久化会话历史；`/clear` 后自动注入相关上下文；可用自然语言查询历史
 
 ---
 
@@ -176,13 +177,24 @@
 - 70-85% (HIGH): 准备保存, 建议 `/clear`
 - \> 85% (CRITICAL): 立即保存并强烈建议 `/clear`
 
-**状态保存**: 调用 `save_session_state`, 保存已完成任务、当前任务、下一步计划、代码变更、待审计文件
+**状态保存**:
+- 调用 `save_session_state`, 保存已完成任务、当前任务、下一步计划、代码变更、待审计文件
+- **claude-mem 自动持久化**: 如已安装，所有会话历史自动保存到 SQLite，无需手动保存
+
+**会话恢复**:
+- 手动恢复: 读取 `.claude/state/current-session.md`
+- **claude-mem 自动恢复**: `/clear` 后自动检索相关历史并注入新会话
+
+**历史查询** (如已安装 claude-mem):
+- 自然语言查询: "What bugs did we fix last session?"
+- Web UI: http://localhost:37777
 
 ### Phase 5: 审计、文档与归档
 **工具**: Skills (双模型并行)
 
 1. **会话恢复** (如执行了 `/clear`)
-   - 读取 `.claude/state/current-session.md`
+   - 手动: 读取 `.claude/state/current-session.md`
+   - **claude-mem**: 自动注入相关历史上下文
 
 2. **双模型审计** (必需)
    - 并行调用 Codex 和 Gemini 审计 (run in background)
@@ -268,12 +280,12 @@ python ~/.claude/skills/collaborating-with-gemini/scripts/gemini_bridge.py \
 | Phase | Tool | Type | Key Constraint |
 |:------|:-----|:-----|:--------------|
 | 0 | `check_context_usage` + `AskUserQuestion` + Write | MCP + Built-in | < 50%; 创建Spec |
-| 1 | `search_code_advanced` | Code Index MCP | 禁用 grep; 递归检索 |
-| 2 | Codex + Gemini + `AskUserQuestion` + Edit | Skills + Built-in | 并行分析; 任务拆解; 用户确认; Hard Stop |
-| 3 | **task-designer SubAgent** (降级: Codex) + Edit | SubAgent + Built-in | 任务级设计; 更新Spec状态 |
-| 4 | **code-implementer SubAgent** (降级: general-purpose) + **code-reviewer SubAgent** (降级: Codex) + Edit | SubAgent + Built-in | 并行/串行执行; 5+类别审查; 实时更新Spec |
-| 4.5 | `save_session_state` | MCP | > 70% |
-| 5 | Codex + Gemini + Gemini(文档) + Bash(测试) + Edit | Skills + Built-in | 双模型审计; 可选文档; 可选测试; 归档Spec |
+| 1 | `search_code_advanced` | Code Index MCP | 自然语言查询; 递归检索 |
+| 2 | Codex + Gemini + `AskUserQuestion` + Edit | Skills + Built-in | 并行分析; 任务拆解; Hard Stop |
+| 3 | **task-designer SubAgent** (降级: Codex) + Edit | SubAgent + Built-in | 任务级设计 |
+| 4 | **code-implementer** + **code-reviewer SubAgent** (降级: Codex) + Edit | SubAgent + Built-in | 并行/串行执行; 5+类别审查 |
+| 4.5 | `save_session_state` + **claude-mem** | MCP + Plugin | > 70%; 自动持久化 |
+| 5 | Codex + Gemini + Gemini(文档) + Bash(测试) + Edit | Skills + Built-in | 双模型审计; 可选文档/测试 |
 
 ## 4. SubAgent 配置
 
@@ -369,8 +381,9 @@ Task({
 - 调用前思考是否续接
 - 截断时自动继续直至 Diff 完整
 - SubAgent 会话可恢复
+- **claude-mem**: 自动持久化所有会话，`/clear` 后自动注入相关上下文
 
 ---
 
-**版本**: 4.1.0
-**更新**: 集成 SubAgent 机制 - task-designer、code-implementer、code-reviewer
+**版本**: 4.2.0
+**更新**: 集成 claude-mem 持久化记忆机制

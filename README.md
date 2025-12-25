@@ -23,6 +23,7 @@
 
 - **Claude Code Plugin** - 6 个 slash commands 强制执行工作流
 - **Context Monitor MCP** - 通过 Hook 实时捕获上下文使用率
+- **claude-mem Plugin** - 跨会话持久化记忆 + 智能上下文注入
 - **Code Index MCP** - 语义搜索和符号索引
 - **Multi-Model Skills** - Codex（后端）+ Gemini（前端）协作
 
@@ -30,7 +31,58 @@
 
 ## 快速开始
 
-### 插件安装（推荐）
+### 前置依赖
+
+#### 1. 安装 claude-mem 插件（推荐）
+
+claude-mem 提供跨会话持久化记忆，与 context-monitor 完美互补：
+
+```bash
+# 1. 添加 marketplace
+/plugin marketplace add thedotmack/claude-mem
+
+# 2. 安装插件
+/plugin install claude-mem
+
+# 3. 重启 Claude Code
+# claude-mem 会自动捕获会话历史并在新会话中注入相关上下文
+```
+
+**claude-mem 的作用**:
+- ✅ 自动持久化所有会话历史到 SQLite
+- ✅ 智能检索相关上下文注入新会话
+- ✅ 自然语言查询历史 (`mem-search`)
+- ✅ Web UI 浏览历史 (localhost:37777)
+- ✅ 解决 `/clear` 后的上下文断裂问题
+
+**系统要求**:
+- Node.js 18.0.0+
+- Bun (运行时)
+- uv (Python 包管理器)
+
+#### 2. 安装 Multi-Model Skills（可选）
+
+用于 Phase 2 和 Phase 5 的多模型协作：
+
+```bash
+# 克隆 skills 仓库
+git clone https://github.com/GuDaStudio/skills ~/.claude/skills
+
+# 配置 Codex（后端/逻辑分析）
+# 需要配置 Codex API key
+
+# 配置 Gemini（前端/UI 分析）
+# 需要配置 Gemini API key
+```
+
+**Skills 的作用**:
+- ✅ Codex: 后端逻辑分析、代码设计、代码审查
+- ✅ Gemini: 前端 UI 分析、文档生成
+- ✅ 并行执行提升性能 40-50%
+
+**注意**: Skills 是可选的，如果不安装，工作流会降级为 Claude 单独分析。
+
+### 插件安装（必需）
 
 ```bash
 # 1. 添加 marketplace
@@ -141,8 +193,15 @@ Phase 5: 双模型审计 → 最终交付
 
 ## 系统要求
 
+### 必需
 - **Python** 3.7+
 - **Claude Code** 2.0+
+
+### claude-mem 依赖（如果安装）
+- **Node.js** 18.0.0+
+- **Bun** (运行时和进程管理器)
+- **uv** (Python 包管理器)
+- **SQLite** 3
 
 ### Windows 用户特别注意
 
@@ -242,9 +301,69 @@ A: 配置 UTF-8 编码环境变量（见上方"Windows 用户特别注意"）
 
 A: 详细文档请参考项目中的 `CLAUDE.md` 和 `PLUGIN.md` 文件
 
+### Q: claude-mem 和 context-monitor 有什么区别？
+
+A: 两者互补，建议同时安装：
+- **context-monitor**: 实时监控上下文使用率 + 强制执行工作流 + 多模型协作
+- **claude-mem**: 跨会话持久化记忆 + 智能上下文注入 + 历史查询
+
+**配合使用的优势**:
+- context-monitor 监控上下文，触发保存
+- claude-mem 自动持久化，解决 `/clear` 后的断裂
+- context-monitor 的工作流 + claude-mem 的记忆 = 完整开发体验
+
+### Q: 如何查询历史会话？
+
+A: 安装 claude-mem 后，使用自然语言查询：
+```bash
+# 查询历史
+What bugs did we fix last session?
+How did we implement authentication?
+
+# 或访问 Web UI
+# 浏览器打开: http://localhost:37777
+```
+
+### Q: claude-mem 需要手动配置吗？
+
+A: 不需要！安装后自动工作：
+- 自动捕获所有工具使用
+- 自动生成语义摘要
+- 自动注入相关上下文到新会话
+- 唯一需要的是安装 Node.js 18+ 和 Bun
+
 ---
 
-## 🎉 最新更新（v1.1.5）
+## 🎉 最新更新（v1.3.0）
+
+### ✨ 核心突破
+
+1. **claude-mem 集成** 🎯
+   - 跨会话持久化记忆，解决 `/clear` 后的上下文断裂
+   - 智能检索相关历史，自动注入新会话
+   - 自然语言查询历史 (`mem-search`)
+   - Web UI 浏览所有会话历史
+
+2. **完整依赖说明** 📦
+   - 详细的 claude-mem 安装指南
+   - Multi-Model Skills 配置说明
+   - 系统要求清单
+
+3. **互补性设计** ⚡
+   - context-monitor: 实时监控 + 工作流强制执行
+   - claude-mem: 持久化记忆 + 智能注入
+   - 两者配合实现完整开发体验
+
+### 🐛 修复（v1.2.0）
+
+- 修复 PostToolUse Hook 硬编码路径问题
+- 添加所有 Hook 的 timeout 配置
+- 改进错误处理和输入验证
+- 添加 PreCompact 和 SessionEnd Hook
+
+---
+
+## 🎉 历史更新（v1.1.5）
 
 ### ✨ 核心突破
 
@@ -292,11 +411,12 @@ MIT License - 详见 [LICENSE](./LICENSE)
 ## 致谢
 
 - [Claude Code](https://claude.com/claude-code) - Anthropic 官方 CLI 工具
+- [claude-mem](https://github.com/thedotmack/claude-mem) - 跨会话持久化记忆插件
 - [GuDaStudio/skills](https://github.com/GuDaStudio/skills) - 多模型协作技能
 - [MCP Servers](https://github.com/modelcontextprotocol/servers) - Code Index MCP
 
 ---
 
-**版本**: 1.2.0
-**最后更新**: 2025-12-22
+**版本**: 1.3.0
+**最后更新**: 2025-12-25
 **项目地址**: https://github.com/wuciqiang/context-monitor

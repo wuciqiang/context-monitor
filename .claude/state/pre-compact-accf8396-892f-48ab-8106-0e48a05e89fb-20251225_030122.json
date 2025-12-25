@@ -1,0 +1,9 @@
+{
+  "event": "pre_compact",
+  "timestamp": "2025-12-25T03:01:22.592761Z",
+  "session_id": "accf8396-892f-48ab-8106-0e48a05e89fb",
+  "usage_percent": 0.0,
+  "context_tokens": 0,
+  "transcript_path": "C:\\Users\\admin\\.claude\\projects\\F--LayaAir-GitHub-context-monitor\\accf8396-892f-48ab-8106-0e48a05e89fb.jsonl",
+  "cwd": "F:\\LayaAir-GitHub\\context-monitor"
+}
