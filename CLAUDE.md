@@ -55,6 +55,14 @@
 3. **交叉验证与任务拆解** (必需)
    - 整合各方思路, 执行逻辑推演
    - 生成任务拆解 (2-8个原子任务)
+   - **任务粒度指导**:
+     * 简单任务: 5-15分钟 (单文件修改, 明确逻辑)
+     * 中等任务: 15-30分钟 (多文件修改, 中等复杂度)
+     * 复杂任务: 拆分为多个子任务 (架构变更, 跨模块)
+   - **任务规格要求**:
+     * 明确的文件路径和行号范围
+     * 完整的验证步骤列表
+     * 预期的输出结果描述
    - 分析任务依赖, 划分并行组和串行组
    - 格式:
      ```
@@ -66,6 +74,15 @@
 4. **更新Spec文档** (必需)
    - 将任务清单写入 `spec.md`
    - 记录每个任务的: 描述、文件范围、SubAgent类型、依赖关系
+   - **任务详细字段** (每个任务必须包含):
+     * `task_id`: 任务ID (T001, T002, ...)
+     * `description`: 任务描述
+     * `estimated_duration`: 预估时长 (5-30分钟)
+     * `file_scope`: 文件路径和行号范围
+     * `verification_steps`: 明确的验证步骤列表
+     * `expected_output`: 预期输出结果
+     * `subagent_type`: SubAgent 类型
+     * `dependencies`: 依赖的任务ID列表
 
 5. **用户确认任务拆解** (必需)
    - 使用 `AskUserQuestion` 展示任务拆解
@@ -106,9 +123,19 @@
 **对每个任务执行**:
 
 1. **代码实施** (必需)
+   - **SubAgent 策略选择**:
+     * **一次性模式** (默认): 每个任务使用全新 SubAgent
+       - 适用场景: 独立任务, 避免上下文污染
+       - 优势: 纯净环境, 强制规格完整性
+       - 每次传递完整的设计方案和上下文
+     * **持久化模式**: 使用 SESSION_ID 恢复 SubAgent
+       - 适用场景: 相关任务, 需要上下文连续性
+       - 优势: 保持上下文, 减少重复说明
+       - 在 Phase 2 任务拆解时标记需要持久化的任务组
+
    - **优先**: 使用 code-implementer SubAgent
      ```typescript
-     // 并行组: 单消息多个 Task 调用
+     // 一次性模式 (并行组)
      [
        Task({
          subagent_type: "code-implementer",
@@ -122,35 +149,46 @@
        })
      ]
 
-     // 串行组: 逐个执行
+     // 持久化模式 (串行组, 需要上下文)
      Task({
        subagent_type: "code-implementer",
        description: "实施任务 T003",
-       prompt: "基于设计方案实施 T003..."
+       prompt: "基于设计方案实施 T003...",
+       resume: "[previous-subagent-id]"  // 恢复之前的 SubAgent
      })
      ```
    - **降级**: 如 SubAgent 不可用,使用 general-purpose 或 Codex Skill
    - 传递 task-designer 的设计方案
    - 收集修改的文件列表
 
-2. **代码审查** (必需)
-   - **优先**: 使用 code-reviewer SubAgent
-     ```typescript
-     Task({
-       subagent_type: "code-reviewer",
-       description: "审查任务 T001",
-       prompt: "审查 T001 的代码实施...\n修改文件: [列表]\n设计方案: [原始设计]"
-     })
-     ```
-   - **降级**: 如 SubAgent 不可用,调用 Codex Skill
-   - 5+类别评估:
-     * 可维护性
-     * 性能
-     * 安全性 (SQL注入/XSS/命令注入)
-     * 风格一致性
-     * 文档完整性
-   - 问题分级: Critical/High/Medium/Low
-   - 评分: 0-100
+2. **两阶段代码审查** (必需)
+   - **阶段1: 规格合规性审查**
+     * 检查是否符合 task-designer 的设计方案
+     * 检查是否完成所有要求的功能点
+     * 检查文件修改是否在预期范围内
+     * 检查是否遵循任务规格的验证步骤
+     * 不合规则标记为 SPEC_VIOLATION, 必须修复
+
+   - **阶段2: 代码质量审查**
+     * **优先**: 使用 code-reviewer SubAgent
+       ```typescript
+       Task({
+         subagent_type: "code-reviewer",
+         description: "审查任务 T001",
+         prompt: "审查 T001 的代码实施...\n修改文件: [列表]\n设计方案: [原始设计]"
+       })
+       ```
+     * **降级**: 如 SubAgent 不可用,调用 Codex Skill
+     * 5+类别评估:
+       - 可维护性
+       - 性能
+       - 安全性 (SQL注入/XSS/命令注入)
+       - 风格一致性
+       - 文档完整性
+     * 问题分级: Critical/High/Medium/Low
+     * 评分: 0-100
+
+   - **两阶段都通过才能进入修复循环**
 
 3. **修复循环** (如需要)
    - Critical/High问题: 立即修复
@@ -163,8 +201,33 @@
    - 标记任务: `in_progress` → `completed`
    - 记录: 修改文件、完成时间、审查结果
    - 更新 checkbox: `- [ ]` → `- [x]`
+   - **记录执行详情**:
+     * `actual_duration`: 实际执行时长
+     * `actual_output`: 实际输出结果
+     * `verification_status`: passed/failed/skipped
+     * `spec_compliance`: passed/SPEC_VIOLATION
+     * `quality_score`: 代码质量评分 (0-100)
+     * `issues_found`: 发现的问题列表 (按级别分类)
+     * `subagent_id`: 执行的 SubAgent ID
 
-5. **上下文管理** (自动)
+5. **验证检查点** (必需)
+   - **强制验证**: 任务完成后必须通过验证才能标记为 completed
+   - **验证步骤**:
+     * 运行任务规格中定义的验证步骤
+     * 运行相关的单元测试 (如存在)
+     * 检查构建状态 (如适用)
+     * 验证功能可用性 (手动或自动)
+   - **验证结果**:
+     * 验证通过: 任务保持 `completed` 状态
+     * 验证失败: 任务回退到 `in_progress`, 记录失败原因
+     * 记录验证结果到 Spec 文档
+   - **验证失败处理**:
+     * 分析失败原因
+     * 修复问题
+     * 重新审查
+     * 重新验证 (最多3次验证尝试)
+
+6. **上下文管理** (自动)
    - 每完成1个任务检查上下文
    - > 70%: 保存状态 → 建议 `/clear`
    - Context Monitor 每 5-10 工具调用自动检查
@@ -355,15 +418,39 @@ Task({
 
 ### 任务拆解
 - 2-8个原子任务
+- **任务粒度指导**: 简单任务 5-15分钟, 中等任务 15-30分钟, 复杂任务拆分
+- **任务规格要求**: 明确文件路径、验证步骤、预期输出
 - 分析依赖, 划分并行组和串行组
 - 用户确认任务拆解, 支持调整
 - 记录到Spec文档
 
 ### Spec文档管理
 - 实时更新任务状态: pending → in_progress → completed
+- **增强字段**: estimated_duration, verification_steps, expected_output, actual_output, verification_status, spec_compliance, quality_score
 - 记录设计要点和审查结果
 - 记录修改文件和完成时间
 - 完成后归档到 `.claude/specs/completed/`
+
+### 代码质量
+- SubAgent 或外部模型设计方案, Claude 协调
+- **两阶段审查**: 规格合规性审查 + 代码质量审查
+- 强制5+类别审查: 可维护性、性能、安全性、风格、文档
+- 问题分级: Critical/High/Medium/Low
+- 评分 ≥ 90% 且无 Critical/High 问题才通过
+- 最多2轮修复循环
+
+### 验证机制
+- **强制验证检查点**: 任务完成后必须通过验证
+- 运行任务规格中定义的验证步骤
+- 运行相关单元测试和构建检查
+- 验证失败则任务回退到 in_progress
+- 最多3次验证尝试
+
+### SubAgent 策略
+- **一次性模式** (默认): 独立任务, 避免上下文污染
+- **持久化模式**: 相关任务, 保持上下文连续性
+- Phase 2 任务拆解时标记策略
+- 使用 resume 参数恢复 SubAgent 会话
 
 ### 会话管理
 - 调用前思考是否续接
@@ -372,5 +459,12 @@ Task({
 
 ---
 
-**版本**: 4.1.0
-**更新**: 集成 SubAgent 机制 - task-designer、code-implementer、code-reviewer
+**版本**: 4.2.0
+**更新**:
+- 集成 Superpowers 工作流精华
+- 新增: 强化验证机制 (verification-before-completion)
+- 新增: 两阶段代码审查 (规格合规性 + 代码质量)
+- 新增: 任务粒度指导 (5-15分钟简单, 15-30分钟中等)
+- 新增: 增强 Spec 文档结构 (verification_steps, expected_output, quality_score 等)
+- 新增: SubAgent 策略优化 (一次性模式 vs 持久化模式)
+- 优化: 任务规格要求更明确 (文件路径、验证步骤、预期输出)
