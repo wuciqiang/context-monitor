@@ -194,10 +194,10 @@ describe('{feature_name}', () => {
 - **预估耗时**: {estimated_duration} 分钟
 - **偏差**: {deviation}%
 
-### 问题记录
-| 问题 | 严重程度 | 状态 | 解决方案 |
-|------|----------|------|----------|
-| {issue_1} | {severity} | {status} | {solution} |
+### 问题记录 (Manus增强)
+| 问题 | 严重程度 | 上下文占用 | 状态 | 解决方案 | 学习点 |
+|------|----------|------------|------|----------|--------|
+| {issue_1} | {severity} | {context_%} | {status} | {solution} | {learning} |
 
 ---
 

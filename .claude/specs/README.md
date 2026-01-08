@@ -12,7 +12,7 @@ Spec文档是任务追踪和知识沉淀的核心机制,记录从需求到交付
 ├── active/                      # 进行中的任务
 │   └── [feature-name]/
 │       ├── spec.md             # 主规格文档
-│       ├── task-log.md         # 任务执行日志(可选)
+│       ├── notes.md            # 研究笔记/决策记录/错误日志 (Manus模式)
 │       └── context.json        # 上下文快照
 └── completed/                   # 已完成的任务
     └── [feature-name]/
@@ -58,6 +58,23 @@ testing_enabled: true|false
 
 ## 技术约束
 [从Phase 1获取的技术限制]
+
+## 边界与假设 (Manus模式)
+
+### Assumptions (假设)
+- [本任务的前提假设]
+
+### Decisions (关键决策)
+- [决策]: [理由]
+
+### Out-of-scope (范围外)
+- [明确不在范围内的内容]
+
+## Errors & Issues (Manus模式)
+
+| 时间 | 阶段 | 错误/问题描述 | 上下文占用 | 解决方案/规避策略 | 学习点 |
+|------|------|---------------|------------|-------------------|--------|
+| ... | ... | ... | ... | ... | ... |
 
 ## 测试需求
 [如果启用测试,记录测试要求]
@@ -108,6 +125,38 @@ testing_enabled: true|false
 - [建议2]
 ```
 
+### context.json 结构 (Manus模式 v1.1)
+
+```json
+{
+  "schema_version": "1.1",
+  "session_id": "[会话ID]",
+  "feature_name": "[功能名称]",
+  "created_at": "[ISO 8601时间戳]",
+  "updated_at": "[ISO 8601时间戳]",
+  "errors": [
+    {
+      "timestamp": "2026-01-08T10:23:00Z",
+      "phase": "Phase 4",
+      "type": "TS2322",
+      "description": "Type Error in auth.ts",
+      "context_usage": "25%",
+      "resolution": "使用 Omit<T, K> 排除属性",
+      "learning": "TypeScript 类型推导在继承时需要显式排除"
+    }
+  ]
+}
+```
+
+**Schema 版本说明**:
+- `schema_version: "1.0"`: 初始版本（无 errors 字段）
+- `schema_version: "1.1"`: 增加 errors 数组（Manus 模式）
+
+**向后兼容处理**:
+- 读取时：如果缺少 `schema_version`，默认为 "1.0"
+- 读取时：如果缺少 `errors`，默认为空数组 `[]`
+- 写入时：始终写入 `schema_version: "1.1"` 和 `errors` 字段
+
 ## 工作流集成
 
 ### Phase 0: 创建Spec
@@ -128,7 +177,17 @@ AskUserQuestion({
 
 // 创建Spec目录和文件
 Write(".claude/specs/active/[feature-name]/spec.md")
-Write(".claude/specs/active/[feature-name]/context.json")
+Write(".claude/specs/active/[feature-name]/notes.md")  // Manus模式
+
+// 创建context.json (v1.1 schema with Manus errors support)
+Write(".claude/specs/active/[feature-name]/context.json", {
+  schema_version: "1.1",
+  session_id: getCurrentSessionId(),
+  feature_name: "[feature-name]",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  errors: []  // Manus 错误追踪数组
+})
 ```
 
 ### Phase 2: 更新任务清单
@@ -194,7 +253,7 @@ Edit(spec, {
   }
 })
 
-// 移动到completed目录
+// 移动到completed目录 (包括 notes.md)
 Bash("mv .claude/specs/active/[feature-name] .claude/specs/completed/")
 ```
 
@@ -205,6 +264,27 @@ Bash("mv .claude/specs/active/[feature-name] .claude/specs/completed/")
 3. **问题追踪**: 所有审查问题都记录到Spec
 4. **知识沉淀**: 完成的Spec是项目知识库的一部分
 5. **可追溯性**: 通过Spec可追溯任何功能的开发过程
+
+## SubAgent Context Inheritance 字段映射 (Manus模式)
+
+启动 SubAgent 时必须传入 spec.md 的上下文摘要，字段来源映射如下：
+
+| SubAgent 字段 | spec.md 对应章节 | 说明 |
+|---------------|------------------|------|
+| **Goal** | `## 功能概述` | 从功能概述章节提取核心目标 |
+| **Status** | `## 任务清单` | 当前任务状态，如 "Phase 4 - 正在实施 T001" |
+| **Out-of-scope** | `## 边界与假设 → Out-of-scope` | 明确不在范围内的内容 |
+
+**示例**:
+```
+[Spec Context]
+Goal: 实现基于JWT的用户认证系统
+Status: Phase 4 - 正在实施 T001 (JWT生成和验证)
+Out-of-scope: 不包含社交登录、不包含多因素认证
+
+[Task Details]
+基于设计方案实施 T001...
+```
 
 ## 查询和分析
 

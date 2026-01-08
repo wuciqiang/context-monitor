@@ -10,6 +10,11 @@
 - **最小作用域**：仅针对需求改动，严禁影响现有功能
 - **并行执行**：Codex/Gemini 调用必须 `run in background`，不设 timeout
 - **强制遵循**：严格执行所有 Phase；跳过任何 Phase 视为危险操作，需立即终止并报告原因
+- **Manus 协议** (Context Engineering):
+  - **注意力刷新**: Phase 2/3/4 入口必须重读 `spec.md` 的功能概述和当前任务状态
+  - **外部记忆**: 思考过程、中间状态、研究笔记必须写入 `notes.md`，严禁堆积在 Context
+  - **错误沉淀**: 所有执行错误必须记录到 `spec.md` 的 Errors 章节和 `context.json.errors`
+  - **追加式上下文**: 永远不修改历史消息，只追加新信息；>500 行内容存文件，Context 仅保留路径
 
 ---
 
@@ -122,7 +127,24 @@
 
 **对每个任务执行**:
 
-1. **代码实施** (必需)
+1. **SubAgent Context Inheritance Protocol** (必需)
+   - 启动 SubAgent 前必须传入 spec.md 的上下文摘要:
+     * 功能概述 (Goal)
+     * 当前任务状态 (Status)
+     * 范围边界 (Out-of-scope)
+   - **禁止裸启动**: SubAgent 不得在无 spec 上下文的情况下直接执行
+   - 示例 Prompt 格式:
+     ```
+     [Spec Context]
+     Goal: 实现用户认证功能
+     Status: Phase 4 - 正在实施 T001 (登录接口)
+     Out-of-scope: 不包含社交登录
+
+     [Task Details]
+     基于设计方案实施 T001...
+     ```
+
+2. **代码实施** (必需)
    - **SubAgent 策略选择**:
      * **一次性模式** (默认): 每个任务使用全新 SubAgent
        - 适用场景: 独立任务, 避免上下文污染
@@ -160,6 +182,11 @@
    - **降级**: 如 SubAgent 不可用,使用 general-purpose 或 Codex Skill
    - 传递 task-designer 的设计方案
    - 收集修改的文件列表
+
+   - **超大只读文件切片读取** (Phase 4 例外):
+     * 仅在 Phase 4 实施阶段，对 >500 行的只读参考文件，允许使用 `grep` 或 `view_code_item` 进行切片读取
+     * 优先使用 Code Index MCP 的 `search_code_advanced`
+     * 禁止全量读取超大文件到上下文，必须按需切片或总结到 `notes.md`
 
 2. **两阶段代码审查** (必需)
    - **阶段1: 规格合规性审查**
@@ -456,6 +483,17 @@ Task({
 - 调用前思考是否续接
 - 截断时自动继续直至 Diff 完整
 - SubAgent 会话可恢复
+
+### Manus 模式最佳实践
+- **注意力刷新**: Phase 2/3/4 入口必须重读 spec.md 的功能概述和当前任务状态
+- **外部记忆管理**: 
+  * 研究笔记、思考过程写入 `.claude/specs/active/[feature]/notes.md`
+  * >500 行的内容存文件，Context 仅保留路径
+- **错误追踪**:
+  * 所有错误记录到 spec.md 的 Errors 章节
+  * 结构化错误同步到 context.json.errors
+- **SubAgent 继承**: 启动前必传 spec 摘要（Goal + Status + Out-of-scope）
+- **追加式上下文**: 永不修改历史消息，只追加新信息
 
 ---
 

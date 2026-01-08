@@ -43,17 +43,23 @@ description: 自动执行完整工作流(一键完成所有阶段,含Spec文档�
 
 3. **创建Spec文档** (必需)
    - 创建 `.claude/specs/active/[feature-name]/spec.md`
+   - 创建 `.claude/specs/active/[feature-name]/notes.md`
    - 创建 `.claude/specs/active/[feature-name]/context.json`
    - 初始化任务清单结构
 
 ### 🔄 Phase 1: 上下文检索(自动)
 
 4. **搜索相关代码** (必需)
-   - 使用 `search_code_advanced` 或 Grep + Read
+   - 使用 `search_code_advanced` (自然语言查询)
    - 获取完整代码上下文
    - 递归检索依赖文件
+   - 禁止使用 grep (Phase 1 规则)
 
 ### ⏸️ Phase 2: 分析与任务拆解(暂停确认)
+
+**注意力刷新** (Manus协议):
+- 重读 `spec.md` 的功能概述和当前任务状态
+- 确认目标未偏离原始需求
 
 5. **多模型协作分析** (必需)
    - 并行调用 Codex 和 Gemini (run in background)
@@ -94,6 +100,9 @@ description: 自动执行完整工作流(一键完成所有阶段,含Spec文档�
 
 ### 🔄 Phase 3: 任务级设计(自动)
 
+**注意力刷新** (Manus协议):
+- 重读 `spec.md` 的功能概述和当前任务状态
+
 **对每个任务执行** (按并行/串行组顺序):
 
 10. **Codex设计方案** (必需)
@@ -107,17 +116,36 @@ description: 自动执行完整工作流(一键完成所有阶段,含Spec文档�
 
 ### 🔄 Phase 4: 并行/串行实施(自动)
 
+**注意力刷新** (Manus协议):
+- 重读 `spec.md` 的功能概述和当前任务状态
+
 **执行策略**: 按组执行,组内并行,组间串行
 
 **对每个任务执行**:
 
-12. **SubAgent实施代码** (必需)
+12. **SubAgent Context Inheritance** (必需)
+    - 启动 SubAgent 前必须传入 spec.md 摘要:
+      * 功能概述 (Goal)
+      * 当前任务状态 (Status)
+      * 范围边界 (Out-of-scope)
+    - Prompt 格式示例:
+      ```
+      [Spec Context]
+      Goal: [功能概述]
+      Status: Phase 4 - 正在实施 T001
+      Out-of-scope: [明确不做什么]
+      
+      [Task Details]
+      基于设计方案实施...
+      ```
+
+13. **SubAgent实施代码** (必需)
     - **SubAgent 策略选择**:
       * 一次性模式 (默认): 独立任务, 避免上下文污染
       * 持久化模式: 相关任务, 保持上下文连续性
     - 并行组: 单消息多个 Task 工具调用
     - 串行组: 逐个执行
-    - 传递 Codex 设计方案给 SubAgent
+    - 传递 Codex 设计方案 + spec摘要 给 SubAgent
     - 收集修改的文件列表
 
 13. **两阶段代码审查** (必需)
