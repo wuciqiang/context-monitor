@@ -44,7 +44,7 @@ description: 自动执行完整工作流(一键完成所有阶段,含Spec文档�
 3. **创建Spec文档** (必需)
    - 创建 `.claude/specs/active/[feature-name]/spec.md`
    - 创建 `.claude/specs/active/[feature-name]/notes.md`
-   - 创建 `.claude/specs/active/[feature-name]/context.json`
+   - 创建 `.claude/specs/active/[feature-name]/context.json` (v1.1 schema, 详见 `.claude/specs/README.md`)
    - 初始化任务清单结构
 
 ### 🔄 Phase 1: 上下文检索(自动)

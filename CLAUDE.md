@@ -37,7 +37,8 @@
 
 3. **创建Spec文档** (必需)
    - 创建 `.claude/specs/active/[feature-name]/spec.md`
-   - 创建 `.claude/specs/active/[feature-name]/context.json`
+   - 创建 `.claude/specs/active/[feature-name]/notes.md` (Manus模式: 研究笔记/决策记录/错误日志)
+   - 创建 `.claude/specs/active/[feature-name]/context.json` (v1.1 schema)
    - 初始化任务清单结构
 
 ### Phase 1: 上下文全量检索
