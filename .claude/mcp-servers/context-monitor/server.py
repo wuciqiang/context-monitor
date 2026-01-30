@@ -10,6 +10,35 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# 模型上下文限制配置
+# max_tokens: 理论最大值
+# usable_tokens: 80% 阈值 (Claude auto-compact 触发点)
+MODEL_CONTEXT_LIMITS = {
+    'claude-sonnet-4-5': {'max': 200000, 'usable': 160000},
+    'claude-sonnet-4-5[1m]': {'max': 1000000, 'usable': 800000},
+    'claude-opus-4-5': {'max': 200000, 'usable': 160000},
+    'claude-haiku-4-5': {'max': 200000, 'usable': 160000},
+    'default': {'max': 200000, 'usable': 160000},
+}
+
+def get_context_limits(model_id: str = None) -> dict:
+    """根据模型 ID 获取上下文限制"""
+    if not model_id:
+        return MODEL_CONTEXT_LIMITS['default']
+
+    model_id_lower = model_id.lower()
+
+    # 检测长上下文版本 [1m]
+    if '[1m]' in model_id_lower:
+        return MODEL_CONTEXT_LIMITS['claude-sonnet-4-5[1m]']
+
+    # 匹配已知模型
+    for key in MODEL_CONTEXT_LIMITS:
+        if key != 'default' and key in model_id_lower:
+            return MODEL_CONTEXT_LIMITS[key]
+
+    return MODEL_CONTEXT_LIMITS['default']
+
 def read_session_info():
     """读取 hook 捕获的会话信息"""
     temp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or '/tmp'
@@ -37,16 +66,25 @@ def check_context_usage():
         with open(usage_file) as f:
             data = json.load(f)
             context_tokens = data.get('context_tokens', 0)
-            usage_percent = data.get('usage_percent', 0)
+            model_id = data.get('model_id', None)
 
-        # 确定状态和建议
-        if usage_percent < 50:
+        # 获取模型特定的上下文限制
+        limits = get_context_limits(model_id)
+        max_tokens = limits['max']
+        usable_tokens = limits['usable']
+
+        # 计算双指标
+        usage_percent = (context_tokens / max_tokens) * 100 if max_tokens > 0 else 0
+        usable_percent = (context_tokens / usable_tokens) * 100 if usable_tokens > 0 else 0
+
+        # 基于 usable_percent 确定状态 (更接近真实危险阈值)
+        if usable_percent < 50:
             status = "SAFE"
             recommendation = "Context usage is healthy. Continue working normally."
-        elif usage_percent < 70:
+        elif usable_percent < 70:
             status = "WARNING"
             recommendation = "Context usage is moderate. Consider completing current task soon."
-        elif usage_percent < 85:
+        elif usable_percent < 85:
             status = "HIGH"
             recommendation = "Context usage is high! Complete current task and save state immediately."
         else:
@@ -55,8 +93,11 @@ def check_context_usage():
 
         return {
             "context_tokens": context_tokens,
+            "max_tokens": max_tokens,
+            "usable_tokens": usable_tokens,
             "usage_percent": round(usage_percent, 1),
-            "max_tokens": 200000,
+            "usable_percent": round(usable_percent, 1),
+            "model_id": model_id,
             "status": status,
             "recommendation": recommendation,
             "timestamp": datetime.utcnow().isoformat() + "Z"
